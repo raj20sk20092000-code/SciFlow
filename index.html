@@ -900,6 +900,7 @@ body::before{
   <div class="popup-sheet">
     <div class="popup-handle"></div>
     <div class="popup-header">
+      <button class="popup-close" onclick="closePopup('srsTestPopup')" style="margin-right:8px;">←</button>
       <span style="font-size:1.3rem;">🧠</span>
       <span class="popup-title">Smart Review Test Settings</span>
       <button class="popup-close" onclick="closePopup('srsTestPopup')">✕</button>
@@ -909,6 +910,10 @@ body::before{
         Due cards se test lo — apni settings choose karo 👇
       </div>
       <div id="srsTestPopupStats" style="margin-bottom:14px;"></div>
+      <div class="fg">
+        <label>📝 Number of Questions — 0 = all due cards</label>
+        <input type="number" class="inp" id="srsTestCountInput" value="0" min="0" placeholder="0 = sabhi due cards">
+      </div>
       <div class="fg">
         <label>⏱️ Time Limit (minutes) — 0 = no limit</label>
         <input type="number" class="inp" id="srsTestTimeInput" value="15" min="0" max="180">
@@ -1360,25 +1365,50 @@ function setupMcqExam(){
   updateExamProg();
 }
 
+function isImageOnlyOpts(opts){
+  return !opts || !opts.length || opts.every(o => o==='A'||o==='B'||o==='C'||o==='D');
+}
+
+function renderOptsHtml(opts, selectedArr, qIdx, mode){
+  // mode: 'exam' or 'srs'
+  const imgOnly = isImageOnlyOpts(opts);
+  if(imgOnly){
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+      ${['A','B','C','D'].map(letter=>{
+        const sel = selectedArr && selectedArr.includes(letter);
+        const fn = mode==='exam' ? `toggleOpt(${qIdx},'${letter}')` : `selectSrsTestOpt('${letter}')`;
+        const id = mode==='srs' ? `id="sto_${letter}"` : '';
+        return `<div ${id} onclick="${fn}" style="padding:18px 10px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
+      }).join('')}
+    </div>`;
+  } else {
+    return (opts||[]).map((o,j)=>{
+      const letter = String.fromCharCode(65+j);
+      const sel = selectedArr && selectedArr.includes(letter);
+      if(mode==='exam'){
+        return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${qIdx},'${letter}')">
+          <div class="opt-key">${letter}</div><div>${o}</div>
+        </div>`;
+      } else {
+        return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:1.5px solid ${sel?'rgba(99,102,241,.6)':'var(--border)'};border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
+      }
+    }).join('');
+  }
+}
+
 function renderMcqQuestions(){
   const list = document.getElementById('examQList');
   list.innerHTML = currentQs.map((q,i)=>{
-    const opts = (q.opts||[]).map((o,j)=>{
-      const letter = String.fromCharCode(65+j);
-      const sel = (answers[i]||[]).includes(letter);
-      return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${i},'${letter}')">
-        <div class="opt-key">${letter}</div>
-        <div>${o}</div>
-      </div>`;
-    }).join('');
+    const imgOnly = isImageOnlyOpts(q.opts);
+    const optsHtml = renderOptsHtml(q.opts, answers[i]||[], i, 'exam');
     return `<div class="exam-qcard" id="qcard-${i}">
       <div class="eq-head">
         <div class="eq-num">Q${i+1}</div>
         ${q.subject ? `<div class="eq-type">${q.subject}</div>` : ''}
       </div>
-      <div class="eq-text">${q.q}</div>
-      ${q.img ? `<img class="eq-img" src="${q.img}" onclick="openIv(this.src)">` : ''}
-      <div class="eq-opts" id="opts-${i}">${opts}</div>
+      ${q.q ? `<div class="eq-text">${q.q}</div>` : ''}
+      ${q.img ? `<img class="eq-img" src="${q.img}" style="background:#fff;" onclick="openIv(this.src)">` : ''}
+      <div class="${imgOnly?'':'eq-opts'}" id="opts-${i}">${optsHtml}</div>
     </div>`;
   }).join('');
 }
@@ -1398,14 +1428,9 @@ function toggleOpt(qIdx, letter){
   const container = document.getElementById('opts-'+qIdx);
   if(container){
     const q = currentQs[qIdx];
-    container.innerHTML = (q.opts||[]).map((o,j)=>{
-      const l = String.fromCharCode(65+j);
-      const sel = answers[qIdx].includes(l);
-      return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${qIdx},'${l}')">
-        <div class="opt-key">${l}</div>
-        <div>${o}</div>
-      </div>`;
-    }).join('');
+    const imgOnly = isImageOnlyOpts(q.opts);
+    container.className = imgOnly ? '' : 'eq-opts';
+    container.innerHTML = renderOptsHtml(q.opts, answers[qIdx], qIdx, 'exam');
   }
   renderQdots();
   updateExamProg();
@@ -1933,6 +1958,8 @@ function openSrsTestPopup(){
   if(stats){
     stats.innerHTML = `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#6ee7b7;font-weight:700;">📋 ${due.length} due cards available</div>`;
   }
+  const countInput = document.getElementById('srsTestCountInput');
+  if(countInput){ countInput.placeholder = `0 = sabhi ${due.length} cards`; countInput.max = due.length; }
   openPopup('srsTestPopup');
 }
 
@@ -1941,13 +1968,16 @@ function startSrsTestFromPopup(){
   const timeMins  = parseFloat(document.getElementById('srsTestTimeInput').value)  || 0;
   const marksC    = parseFloat(document.getElementById('srsTestMarksCorrect').value);
   const marksW    = parseFloat(document.getElementById('srsTestMarksWrong').value);
-  startSrsTest(timeMins, marksC, marksW);
+  const qCount    = parseInt(document.getElementById('srsTestCountInput').value)   || 0;
+  startSrsTest(timeMins, marksC, marksW, qCount);
 }
 
-function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0){
+function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0, qCount=0){
   const due = srsDueToday();
   if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  srsTestQuestions   = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  let selected = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  if(qCount > 0) selected = selected.slice(0, qCount);
+  srsTestQuestions   = selected;
   srsTestIdx         = 0;
   srsTestAnswers     = [];
   srsTestStartTime   = Date.now();
@@ -2018,29 +2048,15 @@ function renderSrsTestQ(){
         ${card.srsReason==='slow'?'<span style="margin-left:8px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--gold);padding:2px 8px;border-radius:20px;font-size:0.65rem;">⏱️ SLOW</span>':''}
         ${card.srsReason==='wrong'?'<span style="margin-left:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:2px 8px;border-radius:20px;font-size:0.65rem;">❌ WRONG</span>':''}
       </div>
-      <div class="srs-q-text">${q.img?`<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">`:(q.q||'No question text')}</div>
-      ${(() => {
-        const opts = q.opts || [];
-        const hasRealOpts = opts.length && opts.some(o => o !== 'A' && o !== 'B' && o !== 'C' && o !== 'D');
-        if(hasRealOpts){
-          return `<div id="srsTestOpts" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-            ${opts.map((o,j)=>{
-              const letter = String.fromCharCode(65+j);
-              return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
-            }).join('')}
-          </div>`;
-        } else {
-          return `<div id="srsTestOpts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-            ${['A','B','C','D'].map(letter=>{
-              return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:1rem;font-weight:800;cursor:pointer;transition:all .2s;text-align:center;color:var(--text2);">${letter}</div>`;
-            }).join('')}
-          </div>`;
-        }
-      })()}
-      <div style="display:flex;gap:10px;padding-bottom:80px;">
+      <div class="srs-q-text">${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">` : (q.q||'No question text')}</div>
+      <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:grid;grid-template-columns:1fr 1fr;gap:10px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
+        ${renderOptsHtml(q.opts, [], -1, 'srs')}
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
         <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
         <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected||null)" disabled style="flex:2;padding:12px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
       </div>
+      <div id="srsNextWrap" style="margin-bottom:80px;"></div>
     </div>`;
   window._srsTestSelected = null;
 }
@@ -2093,13 +2109,15 @@ function submitSrsTestQ(selected){
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
   if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; }
 
-  // Show next button
-  const card2 = srsTestQuestions[srsTestIdx]; // for closure
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-  nextBtn.style.cssText='margin-top:10px;margin-bottom:80px;width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
-  nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
-  document.querySelector('#srsTestBody .srs-card').appendChild(nextBtn);
+  // Show next button right after submit/skip buttons
+  const nextWrap = document.getElementById('srsNextWrap');
+  if(nextWrap){
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
+    nextBtn.style.cssText='width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
+    nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
+    nextWrap.appendChild(nextBtn);
+  }
 }
 
 function showSrsTestResult(){
