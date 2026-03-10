@@ -1,15 +1,19 @@
-[
-  {
-    "id": "paper001",
-    "name": "General Knowledge & Mathematics Practice Paper",
-    "type": "mcq",
-    "subject": "Mixed (Math, Science, GK)",
-    "difficulty": "Medium",
-    "questions": 100,
-    "time": 120,
-    "marksCorrect": 1,
-    "marksWrong": 0,
-    "description": "100 प्रश्नों वाला मिश्रित विषय प्रश्न पत्र - गणित, विज्ञान एवं सामान्य ज्ञान",
-    "file": "paper001.json"
-  }
-]
+{
+  "name": "SciFlow Test Series",
+  "description": "Mixed subject MCQ papers",
+  "papers": [
+    {
+      "id": "paper001",
+      "name": "General Knowledge & Mathematics Practice Paper",
+      "type": "mcq",
+      "subject": "Mixed (Math, Science, GK)",
+      "difficulty": "Medium",
+      "questions": 100,
+      "time": 120,
+      "marksCorrect": 1,
+      "marksWrong": 0,
+      "description": "100 प्रश्नों वाला मिश्रित विषय प्रश्न पत्र - गणित, विज्ञान एवं सामान्य ज्ञान",
+      "file": "paper001.json"
+    }
+  ]
+}
