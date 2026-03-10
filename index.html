@@ -1382,7 +1382,7 @@ function renderOptsHtml(opts, selectedArr, qIdx, mode){
         const sel = selectedArr && selectedArr.includes(letter);
         const fn = mode==='exam' ? `toggleOpt(${qIdx},'${letter}')` : `selectSrsTestOpt('${letter}')`;
         const id = mode==='srs' ? `id="sto_${letter}"` : '';
-        return `<div ${id} onclick="${fn}" style="padding:16px 10px;min-height:60px;display:flex;align-items:center;justify-content:center;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
+        return `<div ${id} onclick="${fn}" style="padding:12px;aspect-ratio:2.5/1;display:flex;align-items:center;justify-content:center;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
       }).join('')}
     </div>`;
   } else {
