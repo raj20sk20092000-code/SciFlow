@@ -723,7 +723,7 @@ body::before{
   </div>
   <div class="srs-prog-bar"><div class="srs-prog-fill" id="srsTestProgFill" style="width:0%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div></div>
   <div style="flex:1;padding:14px;padding-bottom:80px;" id="srsTestBody"></div>
-  <div id="srsNextFixed" style="display:none;position:fixed;bottom:0;left:0;right:0;padding:12px 14px;background:rgba(8,11,18,.97);border-top:1px solid var(--border);z-index:70;backdrop-filter:blur(20px);">
+  <div id="srsNextFixed" style="display:none;position:sticky;bottom:0;left:0;right:0;padding:12px 14px;background:rgba(8,11,18,.97);border-top:1px solid var(--border);z-index:70;">
     <button id="srsNextFixedBtn" onclick="" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:11px;font-size:0.95rem;font-weight:800;color:white;cursor:pointer;">Next →</button>
   </div>
 </div>
@@ -2054,11 +2054,11 @@ function renderSrsTestQ(){
       <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:grid;grid-template-columns:1fr 1fr;gap:10px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
         ${renderOptsHtml(q.opts, [], -1, 'srs')}
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:10px;">
-        <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
-        <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected||null)" disabled style="flex:2;padding:12px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
+      <div id="srsBtnRow" style="display:flex;gap:10px;margin-bottom:16px;">
+        <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
+        <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected)" disabled style="flex:2;padding:14px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
       </div>
-      <div id="srsNextWrap" style="margin-bottom:80px;"></div>
+      <button id="srsNextInline" style="display:none;width:100%;padding:15px;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:11px;font-size:0.95rem;font-weight:800;color:white;cursor:pointer;margin-bottom:20px;">Next →</button>
     </div>`;
   window._srsTestSelected = [];
 }
@@ -2130,21 +2130,22 @@ function submitSrsTestQ(selected){
 
   const skipBtn   = document.getElementById('srsTestSkipBtn');
   const submitBtn = document.getElementById('srsTestSubmitBtn');
+  const srsBtnRow = document.getElementById('srsBtnRow');
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
   if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; submitBtn.textContent='Submit →'; }
+  if(srsBtnRow) srsBtnRow.style.display='none';
 
-  // Show next button in fixed bottom bar
-  const nextFixed = document.getElementById('srsNextFixed');
-  const nextFixedBtn = document.getElementById('srsNextFixedBtn');
-  if(nextFixed && nextFixedBtn){
-    nextFixedBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-    nextFixedBtn.onclick = ()=>{ 
-      nextFixed.style.display='none'; 
-      srsTestIdx++; 
-      renderSrsTestQ(); 
-    };
-    nextFixed.style.display='block';
+  // Show Next inline button
+  const nextInline = document.getElementById('srsNextInline');
+  if(nextInline){
+    nextInline.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
+    nextInline.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
+    nextInline.style.display='block';
   }
+
+  // Also hide fixed bar if exists
+  const nextFixed = document.getElementById('srsNextFixed');
+  if(nextFixed) nextFixed.style.display='none';
 }
 
 function showSrsTestResult(){
