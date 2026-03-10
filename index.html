@@ -855,7 +855,7 @@ body::before{
         </div>
         <div class="fg">
           <label>❌ Marks (wrong)</label>
-          <input type="number" class="inp" id="marksWrongInput" value="0" step="0.25">
+          <input type="number" class="inp" id="marksWrongInput" value="-0.25" step="0.25">
         </div>
       </div>
     </div>
@@ -1304,7 +1304,7 @@ function openPaper(id){
   document.getElementById('testTimeInput').value = paper.time || 30;
   document.getElementById('testNumInput').value = paper.questions || 10;
   document.getElementById('marksCorrectInput').value = paper.marksCorrect !== undefined ? paper.marksCorrect : 1;
-  document.getElementById('marksWrongInput').value = paper.marksWrong !== undefined ? paper.marksWrong : -0.25;
+  document.getElementById('marksWrongInput').value = (paper.marksWrong !== undefined && paper.marksWrong !== 0) ? paper.marksWrong : -0.25;
   document.getElementById('mcqNumWrap').style.display = paper.type==='pdf' ? 'block' : 'block';
 
   let meta = '';
@@ -1325,8 +1325,8 @@ async function startPaperTest(){
   timeLeft  = (parseInt(document.getElementById('testTimeInput').value)||30) * 60;
   pdfQCount = parseInt(document.getElementById('testNumInput').value)||10;
   currentPaper.marksCorrect = parseFloat(document.getElementById('marksCorrectInput').value) || 1;
-  currentPaper.marksWrong   = parseFloat(document.getElementById('marksWrongInput').value);
-  if(isNaN(currentPaper.marksWrong)) currentPaper.marksWrong = -0.25;
+  currentPaper.marksWrong = parseFloat(document.getElementById('marksWrongInput').value);
+  if(isNaN(currentPaper.marksWrong) || currentPaper.marksWrong === 0) currentPaper.marksWrong = -0.25;
 
   toast('⏳ Loading questions...', 'success');
 
