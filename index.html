@@ -313,6 +313,7 @@ body::before{
 
 /* Options */
 .eq-opts{display:flex;flex-direction:column;gap:8px;}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
 .eq-opt{
   display:flex;align-items:center;gap:11px;
   padding:13px 14px;background:var(--s2);
@@ -1410,7 +1411,7 @@ function renderMcqQuestions(){
       </div>
       ${q.q ? `<div class="eq-text">${q.q}</div>` : ''}
       ${q.img ? `<img class="eq-img" src="${q.img}" style="background:#fff;" onclick="openIv(this.src)">` : ''}
-      <div class="${imgOnly?'':'eq-opts'}" id="opts-${i}">${optsHtml}</div>
+      <div class="${imgOnly?'opts-grid':'eq-opts'}" id="opts-${i}">${optsHtml}</div>
     </div>`;
   }).join('');
 }
@@ -1431,7 +1432,7 @@ function toggleOpt(qIdx, letter){
   if(container){
     const q = currentQs[qIdx];
     const imgOnly = isImageOnlyOpts(q.opts);
-    container.className = imgOnly ? '' : 'eq-opts';
+    container.className = imgOnly ? 'opts-grid' : 'eq-opts';
     container.innerHTML = renderOptsHtml(q.opts, answers[qIdx], qIdx, 'exam');
   }
   renderQdots();
