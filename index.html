@@ -722,7 +722,10 @@ body::before{
     <div id="srsTestCounter" style="font-size:0.78rem;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;">0/0</div>
   </div>
   <div class="srs-prog-bar"><div class="srs-prog-fill" id="srsTestProgFill" style="width:0%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div></div>
-  <div style="flex:1;padding:14px;" id="srsTestBody"></div>
+  <div style="flex:1;padding:14px;padding-bottom:80px;" id="srsTestBody"></div>
+  <div id="srsNextFixed" style="display:none;position:fixed;bottom:0;left:0;right:0;padding:12px 14px;background:rgba(8,11,18,.97);border-top:1px solid var(--border);z-index:70;backdrop-filter:blur(20px);">
+    <button id="srsNextFixedBtn" onclick="" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:11px;font-size:0.95rem;font-weight:800;color:white;cursor:pointer;">Next →</button>
+  </div>
 </div>
 <div id="examView">
   <div class="exam-topbar">
@@ -1374,12 +1377,12 @@ function renderOptsHtml(opts, selectedArr, qIdx, mode){
   // mode: 'exam' or 'srs'
   const imgOnly = isImageOnlyOpts(opts);
   if(imgOnly){
-    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+    return `<div style="display:flex;flex-direction:column;gap:8px;">
       ${['A','B','C','D'].map(letter=>{
         const sel = selectedArr && selectedArr.includes(letter);
         const fn = mode==='exam' ? `toggleOpt(${qIdx},'${letter}')` : `selectSrsTestOpt('${letter}')`;
         const id = mode==='srs' ? `id="sto_${letter}"` : '';
-        return `<div ${id} onclick="${fn}" style="padding:18px 10px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
+        return `<div ${id} onclick="${fn}" style="padding:14px 20px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.1rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
       }).join('')}
     </div>`;
   } else {
@@ -2013,12 +2016,18 @@ function showSrsTestView(){
 function exitSrsTest(){
   clearInterval(srsTestTimerInt);
   document.getElementById('srsTestView').style.display = 'none';
+  const nextFixed = document.getElementById('srsNextFixed');
+  if(nextFixed) nextFixed.style.display='none';
   showMainView();
   renderHome();
   renderSrsPage();
 }
 
 function renderSrsTestQ(){
+  // Hide fixed next button for new question
+  const nextFixed = document.getElementById('srsNextFixed');
+  if(nextFixed) nextFixed.style.display='none';
+
   const total = srsTestQuestions.length;
   const idx   = srsTestIdx;
   const pct   = total ? Math.round(idx/total*100) : 0;
@@ -2042,7 +2051,7 @@ function renderSrsTestQ(){
         ${card.srsReason==='wrong'?'<span style="margin-left:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:2px 8px;border-radius:20px;font-size:0.65rem;">❌ WRONG</span>':''}
       </div>
       <div class="srs-q-text">${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">` : (q.q||'No question text')}</div>
-      <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:grid;grid-template-columns:1fr 1fr;gap:10px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
+      <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:flex;flex-direction:column;gap:8px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
         ${renderOptsHtml(q.opts, [], -1, 'srs')}
       </div>
       <div style="display:flex;gap:10px;margin-bottom:10px;">
@@ -2102,14 +2111,17 @@ function submitSrsTestQ(selected){
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
   if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; }
 
-  // Show next button right after submit/skip buttons
-  const nextWrap = document.getElementById('srsNextWrap');
-  if(nextWrap){
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-    nextBtn.style.cssText='width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
-    nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
-    nextWrap.appendChild(nextBtn);
+  // Show next button in fixed bottom bar
+  const nextFixed = document.getElementById('srsNextFixed');
+  const nextFixedBtn = document.getElementById('srsNextFixedBtn');
+  if(nextFixed && nextFixedBtn){
+    nextFixedBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
+    nextFixedBtn.onclick = ()=>{ 
+      nextFixed.style.display='none'; 
+      srsTestIdx++; 
+      renderSrsTestQ(); 
+    };
+    nextFixed.style.display='block';
   }
 }
 
