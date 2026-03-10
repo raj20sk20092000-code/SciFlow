@@ -309,7 +309,7 @@ body::before{
 }
 .eq-type{font-size:0.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .eq-text{font-size:0.92rem;font-weight:600;line-height:1.6;margin-bottom:14px;}
-.eq-img{max-width:100%;width:100%;border-radius:10px;border:1px solid var(--border);margin-bottom:12px;cursor:pointer;display:block;background:#fff;min-height:50px;}
+.eq-img{max-width:100%;width:100%;border-radius:10px;border:1px solid var(--border);margin-bottom:12px;cursor:pointer;display:block;background:#fff;}
 
 /* Options */
 .eq-opts{display:flex;flex-direction:column;gap:8px;}
@@ -652,7 +652,7 @@ body::before{
         Due cards se ek proper test lo — MCQ format mein! Score milega end mein aur galat questions phir SRS mein aayenge.
       </div>
       <div id="srsTestStats" style="margin-bottom:12px;"></div>
-      <button class="btn" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;" onclick="startSrsTest()" id="srsTestBtn">🚀 Start Smart Test →</button>
+      <button class="btn" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;" onclick="openSrsTestPopup()" id="srsTestBtn">🚀 Start Smart Test →</button>
     </div>
 
     <div class="sec-label">SRS Settings</div>
@@ -718,6 +718,7 @@ body::before{
   <div class="srs-topbar">
     <button onclick="exitSrsTest()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;">←</button>
     <div style="flex:1;text-align:center;font-size:0.88rem;font-weight:800;">📝 Smart Review Test</div>
+    <div id="srsTestTimerDisplay" style="font-size:0.75rem;font-weight:700;color:#6ee7b7;font-family:'JetBrains Mono',monospace;margin-right:6px;"></div>
     <div id="srsTestCounter" style="font-size:0.78rem;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;">0/0</div>
   </div>
   <div class="srs-prog-bar"><div class="srs-prog-fill" id="srsTestProgFill" style="width:0%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div></div>
@@ -891,6 +892,41 @@ body::before{
       <button onclick="closePopup('histReviewPopup')" class="popup-close">✕</button>
     </div>
     <div style="overflow-y:auto;padding:0 16px 16px;max-height:70vh;" id="histReviewBody"></div>
+  </div>
+</div>
+
+<!-- ========== POPUP: SMART TEST SETTINGS ========== -->
+<div class="popup-overlay" id="srsTestPopup">
+  <div class="popup-sheet">
+    <div class="popup-handle"></div>
+    <div class="popup-header">
+      <span style="font-size:1.3rem;">🧠</span>
+      <span class="popup-title">Smart Review Test Settings</span>
+      <button class="popup-close" onclick="closePopup('srsTestPopup')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div style="font-size:0.78rem;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+        Due cards se test lo — apni settings choose karo 👇
+      </div>
+      <div id="srsTestPopupStats" style="margin-bottom:14px;"></div>
+      <div class="fg">
+        <label>⏱️ Time Limit (minutes) — 0 = no limit</label>
+        <input type="number" class="inp" id="srsTestTimeInput" value="15" min="0" max="180">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="fg">
+          <label>✅ Marks (correct)</label>
+          <input type="number" class="inp" id="srsTestMarksCorrect" value="1" min="0" step="0.25">
+        </div>
+        <div class="fg">
+          <label>❌ Marks (wrong)</label>
+          <input type="number" class="inp" id="srsTestMarksWrong" value="0" step="0.25">
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="btn btn-primary" onclick="startSrsTestFromPopup()">🚀 Start Smart Test</button>
+    </div>
   </div>
 </div>
 
@@ -1885,20 +1921,63 @@ let srsTestQuestions = [];
 let srsTestIdx       = 0;
 let srsTestAnswers   = [];
 let srsTestStartTime = 0;
+let srsTestTimeMins  = 0;
+let srsTestMarksC    = 1;
+let srsTestMarksW    = 0;
+let srsTestTimeLeft  = 0;
+let srsTestTimerInt  = null;
 
-function startSrsTest(){
+function openSrsTestPopup(){
+  const due = srsDueToday();
+  const stats = document.getElementById('srsTestPopupStats');
+  if(stats){
+    stats.innerHTML = `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#6ee7b7;font-weight:700;">📋 ${due.length} due cards available</div>`;
+  }
+  openPopup('srsTestPopup');
+}
+
+function startSrsTestFromPopup(){
+  closePopup('srsTestPopup');
+  const timeMins  = parseFloat(document.getElementById('srsTestTimeInput').value)  || 0;
+  const marksC    = parseFloat(document.getElementById('srsTestMarksCorrect').value);
+  const marksW    = parseFloat(document.getElementById('srsTestMarksWrong').value);
+  startSrsTest(timeMins, marksC, marksW);
+}
+
+function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0){
   const due = srsDueToday();
   if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  srsTestQuestions = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
-  srsTestIdx       = 0;
-  srsTestAnswers   = [];
-  srsTestStartTime = Date.now();
+  srsTestQuestions   = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  srsTestIdx         = 0;
+  srsTestAnswers     = [];
+  srsTestStartTime   = Date.now();
+  srsTestTimeMins    = timeMins;
+  srsTestMarksC      = isNaN(marksCorrect) ? 1 : marksCorrect;
+  srsTestMarksW      = isNaN(marksWrong)   ? 0 : marksWrong;
+  srsTestTimeLeft    = timeMins > 0 ? timeMins * 60 : 0;
+  clearInterval(srsTestTimerInt);
+  if(timeMins > 0){
+    srsTestTimerInt = setInterval(()=>{
+      srsTestTimeLeft--;
+      updateSrsTestTimer();
+      if(srsTestTimeLeft <= 0){ clearInterval(srsTestTimerInt); showSrsTestResult(); }
+    }, 1000);
+  }
   showSrsTestView();
 }
 
 function shuffleOpts(opts, ans){
   // keep opts order as-is (answer keys already mapped)
   return opts;
+}
+
+function updateSrsTestTimer(){
+  const el = document.getElementById('srsTestTimerDisplay');
+  if(!el) return;
+  const m = Math.floor(srsTestTimeLeft/60);
+  const s = srsTestTimeLeft % 60;
+  el.textContent = `⏱️ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.style.color = srsTestTimeLeft <= 30 ? '#f43f5e' : srsTestTimeLeft <= 60 ? '#f59e0b' : '#6ee7b7';
 }
 
 function showSrsTestView(){
@@ -1909,6 +1988,7 @@ function showSrsTestView(){
 }
 
 function exitSrsTest(){
+  clearInterval(srsTestTimerInt);
   document.getElementById('srsTestView').style.display = 'none';
   showMainView();
   renderHome();
@@ -2018,6 +2098,12 @@ function showSrsTestResult(){
   const pct     = total ? Math.round(correct/total*100) : 0;
   const timeSec = Math.round((Date.now()-srsTestStartTime)/1000);
   const timeStr = timeSec>60 ? `${Math.floor(timeSec/60)}m ${timeSec%60}s` : `${timeSec}s`;
+  clearInterval(srsTestTimerInt);
+
+  // Marks calculation
+  const totalMarks = (correct * srsTestMarksC) - (wrong * Math.abs(srsTestMarksW));
+  const maxMarks   = total * srsTestMarksC;
+  const showMarks  = srsTestMarksC !== 1 || srsTestMarksW !== 0;
 
   // Reset wrong/skipped back into SRS as due today
   srsTestAnswers.forEach(a=>{
@@ -2033,7 +2119,9 @@ function showSrsTestResult(){
     <div style="text-align:center;padding:20px 10px;">
       <div style="font-size:3.5rem;margin-bottom:8px;">${emoji}</div>
       <div style="font-size:1.6rem;font-weight:900;margin-bottom:4px;">${pct}%</div>
+      ${showMarks ? `<div style="font-size:0.95rem;font-weight:900;color:var(--acc);margin-bottom:6px;">📊 ${totalMarks % 1 === 0 ? totalMarks : totalMarks.toFixed(2)} / ${maxMarks} Marks</div>` : ''}
       <div style="font-size:0.82rem;color:var(--text2);margin-bottom:20px;">Smart Review Test Complete · ${timeStr}</div>
+      ${showMarks ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;color:var(--text2);">✅ +${srsTestMarksC} correct &nbsp;|&nbsp; ❌ -${Math.abs(srsTestMarksW)} wrong</div>` : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px;">
         <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px;">
           <div style="font-size:1.4rem;font-weight:900;color:#6ee7b7;">${correct}</div>
