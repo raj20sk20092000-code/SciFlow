@@ -1377,12 +1377,12 @@ function renderOptsHtml(opts, selectedArr, qIdx, mode){
   // mode: 'exam' or 'srs'
   const imgOnly = isImageOnlyOpts(opts);
   if(imgOnly){
-    return `<div style="display:flex;flex-direction:column;gap:8px;">
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       ${['A','B','C','D'].map(letter=>{
         const sel = selectedArr && selectedArr.includes(letter);
         const fn = mode==='exam' ? `toggleOpt(${qIdx},'${letter}')` : `selectSrsTestOpt('${letter}')`;
         const id = mode==='srs' ? `id="sto_${letter}"` : '';
-        return `<div ${id} onclick="${fn}" style="padding:14px 20px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.1rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
+        return `<div ${id} onclick="${fn}" style="padding:22px 10px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.2rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
       }).join('')}
     </div>`;
   } else {
@@ -2051,7 +2051,7 @@ function renderSrsTestQ(){
         ${card.srsReason==='wrong'?'<span style="margin-left:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:2px 8px;border-radius:20px;font-size:0.65rem;">❌ WRONG</span>':''}
       </div>
       <div class="srs-q-text">${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">` : (q.q||'No question text')}</div>
-      <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:flex;flex-direction:column;gap:8px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
+      <div id="srsTestOpts" style="${isImageOnlyOpts(q.opts)?'display:grid;grid-template-columns:1fr 1fr;gap:10px;':'display:flex;flex-direction:column;gap:8px;'}margin-bottom:16px;">
         ${renderOptsHtml(q.opts, [], -1, 'srs')}
       </div>
       <div style="display:flex;gap:10px;margin-bottom:10px;">
@@ -2060,47 +2060,69 @@ function renderSrsTestQ(){
       </div>
       <div id="srsNextWrap" style="margin-bottom:80px;"></div>
     </div>`;
-  window._srsTestSelected = null;
+  window._srsTestSelected = [];
 }
 
 function selectSrsTestOpt(letter){
-  window._srsTestSelected = letter;
-  document.querySelectorAll('[id^="sto_"]').forEach(el=>{
-    el.style.background = 'var(--s2)';
-    el.style.border = '1.5px solid var(--border)';
-    el.style.color = '';
-    el.style.fontWeight = '';
-  });
-  const el = document.getElementById('sto_'+letter);
-  if(el){
-    el.style.background = 'rgba(99,102,241,.18)';
-    el.style.border = '1.5px solid rgba(99,102,241,.6)';
-    el.style.color = '#a5b4fc';
-    el.style.fontWeight = '800';
+  const card = srsTestQuestions[srsTestIdx];
+  const q = card && card.q;
+  const isMulti = q && q.ans && q.ans.length > 1;
+
+  if(!window._srsTestSelected) window._srsTestSelected = [];
+
+  if(isMulti){
+    // Toggle selection
+    const idx = window._srsTestSelected.indexOf(letter);
+    if(idx >= 0) window._srsTestSelected.splice(idx, 1);
+    else window._srsTestSelected.push(letter);
+  } else {
+    window._srsTestSelected = [letter];
   }
+
+  // Re-render all option styles
+  document.querySelectorAll('[id^="sto_"]').forEach(el=>{
+    const l = el.id.replace('sto_','');
+    const sel = window._srsTestSelected.includes(l);
+    el.style.background = sel ? 'rgba(99,102,241,.18)' : 'var(--s2)';
+    el.style.border = sel ? '2px solid rgba(99,102,241,.6)' : '1.5px solid var(--border)';
+    el.style.color = sel ? '#a5b4fc' : '';
+    el.style.fontWeight = sel ? '800' : '';
+  });
+
   const submitBtn = document.getElementById('srsTestSubmitBtn');
-  if(submitBtn){ submitBtn.disabled=false; submitBtn.style.opacity='1'; }
+  if(submitBtn){
+    submitBtn.disabled = window._srsTestSelected.length === 0;
+    submitBtn.style.opacity = window._srsTestSelected.length > 0 ? '1' : '0.5';
+    if(isMulti) submitBtn.textContent = `Submit (${window._srsTestSelected.join(',')}) →`;
+    else submitBtn.textContent = 'Submit →';
+  }
 }
 
 function submitSrsTestQ(selected){
   const card = srsTestQuestions[srsTestIdx];
   const q    = card.q;
   const correctLetters = (q&&q.ans) ? q.ans.map(a=>a.trim().toUpperCase()) : [];
-  const isCorrect = selected && correctLetters.includes(selected.toUpperCase());
-  const isSkip    = selected === null;
 
-  srsTestAnswers.push({ card, selected, isCorrect, isSkip, correctLetters });
+  // Handle array or null
+  const selectedArr = selected === null ? [] : (Array.isArray(selected) ? selected : [selected]);
+  const isSkip = selected === null;
+  const isCorrect = !isSkip &&
+    selectedArr.length === correctLetters.length &&
+    correctLetters.every(a => selectedArr.includes(a));
 
-  // Show result briefly then next
+  srsTestAnswers.push({ card, selected: selectedArr, isCorrect, isSkip, correctLetters });
+
+  // Show result on options
   document.querySelectorAll('[id^="sto_"]').forEach(el=>{
     const letter = el.id.replace('sto_','');
-    const optText = q&&q.opts ? q.opts[letter.charCodeAt(0)-65] : '';
+    const optText = q&&q.opts && q.opts[letter.charCodeAt(0)-65] !== letter ? q.opts[letter.charCodeAt(0)-65] : '';
+    const label = optText ? letter+'. '+optText : letter;
     if(correctLetters.includes(letter)){
       el.style.background='rgba(16,185,129,.18)'; el.style.border='2px solid rgba(16,185,129,.6)'; el.style.color='#6ee7b7'; el.style.fontWeight='800';
-      el.textContent = '✅ '+letter+'. '+optText;
-    } else if(letter===selected && !isCorrect){
+      el.textContent = '✅ '+label;
+    } else if(selectedArr.includes(letter) && !correctLetters.includes(letter)){
       el.style.background='rgba(244,63,94,.12)'; el.style.border='2px solid rgba(244,63,94,.5)'; el.style.color='#fb7185';
-      el.textContent = '❌ '+letter+'. '+optText;
+      el.textContent = '❌ '+label;
     } else { el.style.opacity='0.4'; }
     el.style.cursor='default';
     el.onclick=null;
@@ -2109,7 +2131,7 @@ function submitSrsTestQ(selected){
   const skipBtn   = document.getElementById('srsTestSkipBtn');
   const submitBtn = document.getElementById('srsTestSubmitBtn');
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
-  if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; }
+  if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; submitBtn.textContent='Submit →'; }
 
   // Show next button in fixed bottom bar
   const nextFixed = document.getElementById('srsNextFixed');
