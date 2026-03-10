@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SciFlow</title>
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22SciFlow%22%2C%22short_name%22%3A%22SciFlow%22%2C%22description%22%3A%22GitHub-Powered%20Test%20Series%20App%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23080b12%22%2C%22theme_color%22%3A%22%23080b12%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'40'%20fill%3D'%23080b12'%2F%3E%3Crect%20x%3D'16'%20y%3D'16'%20width%3D'160'%20height%3D'160'%20rx%3D'30'%20fill%3D'%230e1220'%2F%3E%3Ctext%20y%3D'125'%20x%3D'96'%20text-anchor%3D'middle'%20font-size%3D'90'%3ESF%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22SciFlow%22%2C%22short_name%22%3A%22SciFlow%22%2C%22description%22%3A%22GitHub-Powered%20Test%20Series%20App%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23080b12%22%2C%22theme_color%22%3A%22%23080b12%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'40'%20fill%3D'%23080b12'%2F%3E%3Crect%20x%3D'16'%20y%3D'16'%20width%3D'160'%20height%3D'160'%20rx%3D'30'%20fill%3D'%230e1220'%2F%3E%3Ctext%20y%3D'125'%20x%3D'96'%20text-anchor%3D'middle'%20font-size%3D'90'%3ETF%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMDgwYjEyIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgcng9IjMwIiBmaWxsPSIjMGUxMjIwIi8+PHRleHQgeT0iMTIwIiB4PSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSI3MCIgZmlsbD0iIzgxOGNmOCIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC13ZWlnaHQ9IjkwMCI+VEY8L3RleHQ+PC9zdmc+">
 <meta name="mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   SciFlow — GitHub-Powered Test App
+   TESTFLOW — GitHub-Powered Test App
    ============================================================ */
 :root {
   --bg:      #080b12;
@@ -913,7 +913,7 @@ body::before{
    ============================================================ */
 const CONFIG = {
   repoName: 'My Test Series',
-  repoBaseUrl: 'https://raw.githubusercontent.com/raj20sk20092000-code/MOCKMB/main/',
+  repoBaseUrl: 'https://raw.githubusercontent.com/raj20sk20092000-code/SciFlow/main/',
   indexFile: "papers.json",
 };
 // PWA Service Worker
@@ -2282,7 +2282,7 @@ function toast(msg, type='success'){
    GITHUB CLOUD SYNC
    ============================================================ */
 const GH_OWNER = 'raj20sk20092000-code';
-const GH_REPO  = 'MOCKMB';
+const GH_REPO  = 'SciFlow';
 const GH_FILE  = 'userdata/sync.json';
 const GH_API   = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
 
