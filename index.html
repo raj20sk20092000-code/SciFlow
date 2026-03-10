@@ -925,7 +925,7 @@ body::before{
         </div>
         <div class="fg">
           <label>❌ Marks (wrong)</label>
-          <input type="number" class="inp" id="srsTestMarksWrong" value="0" step="0.25">
+          <input type="number" class="inp" id="srsTestMarksWrong" value="-0.25" step="0.25">
         </div>
       </div>
     </div>
@@ -1304,7 +1304,7 @@ function openPaper(id){
   document.getElementById('testTimeInput').value = paper.time || 30;
   document.getElementById('testNumInput').value = paper.questions || 10;
   document.getElementById('marksCorrectInput').value = paper.marksCorrect !== undefined ? paper.marksCorrect : 1;
-  document.getElementById('marksWrongInput').value = paper.marksWrong !== undefined ? paper.marksWrong : 0;
+  document.getElementById('marksWrongInput').value = paper.marksWrong !== undefined ? paper.marksWrong : -0.25;
   document.getElementById('mcqNumWrap').style.display = paper.type==='pdf' ? 'block' : 'block';
 
   let meta = '';
@@ -1325,7 +1325,8 @@ async function startPaperTest(){
   timeLeft  = (parseInt(document.getElementById('testTimeInput').value)||30) * 60;
   pdfQCount = parseInt(document.getElementById('testNumInput').value)||10;
   currentPaper.marksCorrect = parseFloat(document.getElementById('marksCorrectInput').value) || 1;
-  currentPaper.marksWrong   = parseFloat(document.getElementById('marksWrongInput').value)   || 0;
+  currentPaper.marksWrong   = parseFloat(document.getElementById('marksWrongInput').value);
+  if(isNaN(currentPaper.marksWrong)) currentPaper.marksWrong = -0.25;
 
   toast('⏳ Loading questions...', 'success');
 
@@ -1643,12 +1644,12 @@ function calculateMcqResult(){
   const total = currentQs.length;
   const pct   = total ? Math.round(correct/total*100) : 0;
   const mc = currentPaper.marksCorrect || 1;
-  const mw = currentPaper.marksWrong   || 0;
+  const mw = (currentPaper.marksWrong !== undefined && currentPaper.marksWrong !== null) ? currentPaper.marksWrong : -0.25;
   // Per-question marks: use q.marks/q.negMarks if set, else paper default
   let marks = 0, maxMarks = 0;
   details.forEach(d => {
     const qMc = d.q.marks    !== undefined ? d.q.marks    : mc;
-    const qMw = d.q.negMarks !== undefined ? d.q.negMarks : mw;
+    const qMw = d.q.negMarks !== undefined ? -Math.abs(d.q.negMarks) : mw;
     maxMarks += qMc;
     if(d.status === 'correct') marks += qMc;
     else if(d.status === 'wrong') marks += qMw;
@@ -2130,10 +2131,11 @@ function showSrsTestResult(){
   const timeStr = timeSec>60 ? `${Math.floor(timeSec/60)}m ${timeSec%60}s` : `${timeSec}s`;
   clearInterval(srsTestTimerInt);
 
-  // Marks calculation
-  const totalMarks = (correct * srsTestMarksC) - (wrong * Math.abs(srsTestMarksW));
+  // Marks calculation — always apply negative marking
+  const mw = (srsTestMarksW !== undefined && srsTestMarksW !== 0) ? srsTestMarksW : -0.25;
+  const totalMarks = (correct * srsTestMarksC) + (wrong * mw);
   const maxMarks   = total * srsTestMarksC;
-  const showMarks  = srsTestMarksC !== 1 || srsTestMarksW !== 0;
+  const showMarks  = true;
 
   // Reset wrong/skipped back into SRS as due today
   srsTestAnswers.forEach(a=>{
