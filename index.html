@@ -309,7 +309,7 @@ body::before{
 }
 .eq-type{font-size:0.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .eq-text{font-size:0.92rem;font-weight:600;line-height:1.6;margin-bottom:14px;}
-.eq-img{max-width:100%;width:100%;border-radius:10px;border:1px solid var(--border);margin-bottom:12px;cursor:pointer;display:block;background:#fff;}
+.eq-img{max-width:100%;border-radius:10px;border:1px solid var(--border);margin-bottom:12px;cursor:pointer;display:block;}
 
 /* Options */
 .eq-opts{display:flex;flex-direction:column;gap:8px;}
@@ -538,7 +538,7 @@ body::before{
   border:none;color:white;width:36px;height:36px;border-radius:50%;
   font-size:1rem;cursor:pointer;
 }
-.iv-overlay img{max-width:95%;max-height:90vh;border-radius:10px;background:#fff;}
+.iv-overlay img{max-width:95%;max-height:90vh;border-radius:10px;}
 
 /* ---- DIFF BADGE ---- */
 .diff-easy{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:var(--green);}
@@ -909,6 +909,10 @@ body::before{
         Due cards se test lo — apni settings choose karo 👇
       </div>
       <div id="srsTestPopupStats" style="margin-bottom:14px;"></div>
+      <div class="fg">
+        <label>📝 Question Count — 0 = all due cards</label>
+        <input type="number" class="inp" id="srsTestCountInput" value="0" min="0">
+      </div>
       <div class="fg">
         <label>⏱️ Time Limit (minutes) — 0 = no limit</label>
         <input type="number" class="inp" id="srsTestTimeInput" value="15" min="0" max="180">
@@ -1933,6 +1937,8 @@ function openSrsTestPopup(){
   if(stats){
     stats.innerHTML = `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#6ee7b7;font-weight:700;">📋 ${due.length} due cards available</div>`;
   }
+  const countInput = document.getElementById('srsTestCountInput');
+  if(countInput) countInput.placeholder = `Max ${due.length}`;
   openPopup('srsTestPopup');
 }
 
@@ -1941,13 +1947,16 @@ function startSrsTestFromPopup(){
   const timeMins  = parseFloat(document.getElementById('srsTestTimeInput').value)  || 0;
   const marksC    = parseFloat(document.getElementById('srsTestMarksCorrect').value);
   const marksW    = parseFloat(document.getElementById('srsTestMarksWrong').value);
-  startSrsTest(timeMins, marksC, marksW);
+  const qCount    = parseInt(document.getElementById('srsTestCountInput').value)   || 0;
+  startSrsTest(timeMins, marksC, marksW, qCount);
 }
 
-function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0){
+function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0, qCount=0){
   const due = srsDueToday();
   if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  srsTestQuestions   = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  let selected = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  if(qCount > 0) selected = selected.slice(0, qCount);
+  srsTestQuestions   = selected;
   srsTestIdx         = 0;
   srsTestAnswers     = [];
   srsTestStartTime   = Date.now();
