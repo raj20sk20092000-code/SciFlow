@@ -910,10 +910,6 @@ body::before{
       </div>
       <div id="srsTestPopupStats" style="margin-bottom:14px;"></div>
       <div class="fg">
-        <label>📝 Question Count — 0 = all due cards</label>
-        <input type="number" class="inp" id="srsTestCountInput" value="0" min="0">
-      </div>
-      <div class="fg">
         <label>⏱️ Time Limit (minutes) — 0 = no limit</label>
         <input type="number" class="inp" id="srsTestTimeInput" value="15" min="0" max="180">
       </div>
@@ -1937,8 +1933,6 @@ function openSrsTestPopup(){
   if(stats){
     stats.innerHTML = `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#6ee7b7;font-weight:700;">📋 ${due.length} due cards available</div>`;
   }
-  const countInput = document.getElementById('srsTestCountInput');
-  if(countInput) countInput.placeholder = `Max ${due.length}`;
   openPopup('srsTestPopup');
 }
 
@@ -1947,16 +1941,13 @@ function startSrsTestFromPopup(){
   const timeMins  = parseFloat(document.getElementById('srsTestTimeInput').value)  || 0;
   const marksC    = parseFloat(document.getElementById('srsTestMarksCorrect').value);
   const marksW    = parseFloat(document.getElementById('srsTestMarksWrong').value);
-  const qCount    = parseInt(document.getElementById('srsTestCountInput').value)   || 0;
-  startSrsTest(timeMins, marksC, marksW, qCount);
+  startSrsTest(timeMins, marksC, marksW);
 }
 
-function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0, qCount=0){
+function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0){
   const due = srsDueToday();
   if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  let selected = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
-  if(qCount > 0) selected = selected.slice(0, qCount);
-  srsTestQuestions   = selected;
+  srsTestQuestions   = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
   srsTestIdx         = 0;
   srsTestAnswers     = [];
   srsTestStartTime   = Date.now();
@@ -2027,14 +2018,26 @@ function renderSrsTestQ(){
         ${card.srsReason==='slow'?'<span style="margin-left:8px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--gold);padding:2px 8px;border-radius:20px;font-size:0.65rem;">⏱️ SLOW</span>':''}
         ${card.srsReason==='wrong'?'<span style="margin-left:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:2px 8px;border-radius:20px;font-size:0.65rem;">❌ WRONG</span>':''}
       </div>
-      <div class="srs-q-text">${q.img?`<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:8px;" onclick="openIv(this.src)">`:(q.q||'No question text')}</div>
-      ${(q.opts||[]).length ? `<div id="srsTestOpts" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-        ${(q.opts||[]).map((o,j)=>{
-          const letter = String.fromCharCode(65+j);
-          return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
-        }).join('')}
-      </div>` : '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:16px;">Image-based question — answer shown after submit</div>'}
-      <div style="display:flex;gap:10px;">
+      <div class="srs-q-text">${q.img?`<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">`:(q.q||'No question text')}</div>
+      ${(() => {
+        const opts = q.opts || [];
+        const hasRealOpts = opts.length && opts.some(o => o !== 'A' && o !== 'B' && o !== 'C' && o !== 'D');
+        if(hasRealOpts){
+          return `<div id="srsTestOpts" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            ${opts.map((o,j)=>{
+              const letter = String.fromCharCode(65+j);
+              return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
+            }).join('')}
+          </div>`;
+        } else {
+          return `<div id="srsTestOpts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+            ${['A','B','C','D'].map(letter=>{
+              return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:1rem;font-weight:800;cursor:pointer;transition:all .2s;text-align:center;color:var(--text2);">${letter}</div>`;
+            }).join('')}
+          </div>`;
+        }
+      })()}
+      <div style="display:flex;gap:10px;padding-bottom:80px;">
         <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
         <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected||null)" disabled style="flex:2;padding:12px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
       </div>
@@ -2094,7 +2097,7 @@ function submitSrsTestQ(selected){
   const card2 = srsTestQuestions[srsTestIdx]; // for closure
   const nextBtn = document.createElement('button');
   nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-  nextBtn.style.cssText='margin-top:10px;width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
+  nextBtn.style.cssText='margin-top:10px;margin-bottom:80px;width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
   nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
   document.querySelector('#srsTestBody .srs-card').appendChild(nextBtn);
 }
