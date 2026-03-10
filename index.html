@@ -1685,14 +1685,14 @@ function calculatePdfResult(){
   const total = currentQs.length;
   const pct   = total ? Math.round(correct/total*100) : 0;
   const mc = currentPaper.marksCorrect || 1;
-  const mw = currentPaper.marksWrong   || 0;
+  const mw = (currentPaper.marksWrong !== undefined && currentPaper.marksWrong !== null) ? currentPaper.marksWrong : -0.25;
   let marks = 0, maxMarks = 0;
   details.forEach(d => {
     const qMc = d.q.marks    !== undefined ? d.q.marks    : mc;
-    const qMw = d.q.negMarks !== undefined ? d.q.negMarks : mw;
+    const qMw = d.q.negMarks !== undefined ? -Math.abs(d.q.negMarks) : mw;
     maxMarks += qMc;
     if(d.status === 'correct') marks += qMc;
-    else if(d.status === 'wrong') marks += qMw;
+    else if(d.status === 'wrong') marks -= Math.abs(qMw);
   });
   const record = {
     id: Date.now(),
@@ -1728,23 +1728,15 @@ function showResultUI(record){
   document.getElementById('rsS').textContent = record.skip||0;
   document.getElementById('rsT').textContent = record.total||0;
 
-  // Marks row
+  // Marks row — always show
   const marksRow = document.getElementById('rsMarksRow');
-  if(record.marks !== undefined && (record.marksCorrect !== 1 || record.marksWrong !== 0)){
-    marksRow.style.display = 'block';
-    const marksColor = record.marks >= 0 ? 'var(--green)' : 'var(--red)';
-    document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
-    document.getElementById('rsMarks').style.color = marksColor;
-    document.getElementById('rsMarksBreak').textContent =
-      `+${record.marksCorrect} per correct, ${record.marksWrong} per wrong`;
-  } else if(record.marks !== undefined){
-    marksRow.style.display = 'block';
-    document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
-    document.getElementById('rsMarks').style.color = 'var(--acc)';
-    document.getElementById('rsMarksBreak').textContent = `+${record.marksCorrect||1} per correct`;
-  } else {
-    marksRow.style.display = 'none';
-  }
+  marksRow.style.display = 'block';
+  const marksColor = record.marks >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
+  document.getElementById('rsMarks').style.color = marksColor;
+  const mwDisplay = record.marksWrong !== undefined ? record.marksWrong : -0.25;
+  document.getElementById('rsMarksBreak').textContent =
+    `+${record.marksCorrect||1} per correct, ${mwDisplay > 0 ? '-' : ''}${Math.abs(mwDisplay)} per wrong`;
 
   document.getElementById('reviewArea').style.display = 'none';
   retakeData = record;
