@@ -611,7 +611,9 @@ body::before{
   <div style="flex:1;">
     <div class="topbar-title">SciFlow</div>
   </div>
-  <div id="topbarRight"></div>
+  <div id="topbarRight">
+    <button onclick="openPopup('popSettings')" style="background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 10px;font-size:0.72rem;font-weight:700;cursor:pointer;">⚙️</button>
+  </div>
 </div>
 
 <!-- ========== MAIN SCROLL BODY ========== -->
@@ -684,58 +686,7 @@ body::before{
   <!-- SMART REVIEW PAGE -->
   <div class="page" id="page-review">
     <div style="height:14px;"></div>
-
-    <div class="card" style="border-color:rgba(99,102,241,.3);">
-      <div class="card-head" style="color:#a5b4fc;">🧠 Smart Review</div>
-      <div id="srsPageStats" style="margin-bottom:14px;"></div>
-      <button class="btn btn-primary" onclick="startSrsSession()" id="srsStartBtn">Start Review Session →</button>
-    </div>
-
-    <div class="card" style="border-color:rgba(16,185,129,.3);margin-top:14px;">
-      <div class="card-head" style="color:#6ee7b7;">📝 Smart Review Test</div>
-      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:14px;line-height:1.6;">
-        Due cards se ek proper test lo — MCQ format mein! Score milega end mein aur galat questions phir SRS mein aayenge.
-      </div>
-      <div id="srsTestStats" style="margin-bottom:12px;"></div>
-      <button class="btn" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;" onclick="startSrsTest()" id="srsTestBtn">🚀 Start Smart Test →</button>
-    </div>
-
-    <div class="sec-label">SRS Settings</div>
-    <div class="card">
-      <div class="fg">
-        <label>New cards per day</label>
-        <input type="number" class="inp" id="srsNewPerDay" value="10" min="1" max="50" oninput="saveSrsSettings()">
-      </div>
-      <div style="font-size:0.75rem;color:var(--muted);line-height:1.6;">
-        💡 Due cards are always shown. New card limit controls learning pace.
-      </div>
-    </div>
-
-    <div class="sec-label">☁️ GitHub Sync</div>
-    <div class="card" style="border-color:rgba(99,102,241,.3);">
-      <div id="syncStatus" style="font-size:0.8rem;margin-bottom:14px;padding:8px 12px;border-radius:8px;background:var(--s2);color:var(--text2);">
-        🔴 Not connected — data saved on this device only
-      </div>
-      <div id="ghTokenSection">
-        <div class="fg" style="margin-bottom:10px;">
-          <label>GitHub Personal Access Token</label>
-          <input type="password" class="inp" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-        </div>
-        <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;margin-bottom:12px;">
-          💡 github.com → Settings → Developer settings → Tokens (classic) → Generate → scope: <b>repo</b>
-        </div>
-        <button class="btn btn-primary" onclick="connectGitHub()" id="ghConnectBtn" style="width:100%;">🔗 Connect & Sync</button>
-      </div>
-      <div id="ghConnectedSection" style="display:none;">
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button class="btn" onclick="pushToGitHub()" style="flex:1;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;">⬆️ Save</button>
-          <button class="btn" onclick="pullFromGitHub()" style="flex:1;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;font-weight:800;">⬇️ Load</button>
-        </div>
-        <button class="btn" onclick="disconnectGitHub()" style="width:100%;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);color:var(--red);font-size:0.78rem;">Disconnect</button>
-      </div>
-    </div>
-
-    <div style="height:20px;"></div>
+    <div id="srsPageContent"></div>
   </div>
 
   <!-- ANALYTICS PAGE -->
@@ -760,6 +711,7 @@ body::before{
   <div class="srs-topbar">
     <button onclick="exitSrsTest()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;">←</button>
     <div style="flex:1;text-align:center;font-size:0.88rem;font-weight:800;">📝 Smart Review Test</div>
+    <div id="srsTestTimerDisp" style="font-size:0.75rem;font-weight:700;color:#6ee7b7;font-family:'JetBrains Mono',monospace;margin-right:4px;"></div>
     <div id="srsTestCounter" style="font-size:0.78rem;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;">0/0</div>
   </div>
   <div class="srs-prog-bar"><div class="srs-prog-fill" id="srsTestProgFill" style="width:0%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div></div>
@@ -938,7 +890,86 @@ body::before{
   </div>
 </div>
 
-<!-- ========== PAUSE OVERLAY ========== -->
+<!-- ========== POPUP: SRS TEST SETTINGS ========== -->
+<div class="popup-overlay" id="popSrsTest">
+  <div class="popup-sheet">
+    <div class="popup-handle"></div>
+    <div class="popup-header">
+      <span style="font-size:1.2rem;">📝</span>
+      <span class="popup-title">Smart Test Settings</span>
+      <button class="popup-close" onclick="closePopup('popSrsTest')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="fg">
+        <label>📝 Number of Questions (0 = all due)</label>
+        <input class="inp" id="srsTestQCount" type="number" min="0" placeholder="0 = all due cards" value="0">
+      </div>
+      <div class="fg">
+        <label>⏱️ Time Limit (minutes, 0 = no limit)</label>
+        <input class="inp" id="srsTestTime" type="number" min="0" placeholder="0 = no limit" value="0">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="fg" style="flex:1;">
+          <label>✅ Marks Correct</label>
+          <input class="inp" id="srsTestMC" type="number" step="0.25" value="1">
+        </div>
+        <div class="fg" style="flex:1;">
+          <label>❌ Marks Wrong</label>
+          <input class="inp" id="srsTestMW" type="number" step="0.25" value="-0.25">
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="btn btn-primary" onclick="startSrsTestFromPopup()">🚀 Start Smart Test</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POPUP: SETTINGS ========== -->
+<div class="popup-overlay" id="popSettings">
+  <div class="popup-sheet">
+    <div class="popup-handle"></div>
+    <div class="popup-header">
+      <span style="font-size:1.2rem;">⚙️</span>
+      <span class="popup-title">Settings</span>
+      <button class="popup-close" onclick="closePopup('popSettings')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="sec-label">🧠 SRS Settings</div>
+      <div class="fg">
+        <label>New cards per day</label>
+        <input type="number" class="inp" id="srsNewPerDay" value="10" min="1" max="50" oninput="saveSrsSettings()">
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);line-height:1.6;margin-bottom:16px;">
+        💡 Due cards are always shown. New card limit controls learning pace.
+      </div>
+
+      <div class="sec-label">☁️ GitHub Sync</div>
+      <div id="syncStatus" style="font-size:0.8rem;margin-bottom:14px;padding:8px 12px;border-radius:8px;background:var(--s2);color:var(--text2);">
+        🔴 Not connected — data saved on this device only
+      </div>
+      <div id="ghTokenSection">
+        <div class="fg" style="margin-bottom:10px;">
+          <label>GitHub Personal Access Token</label>
+          <input type="password" class="inp" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;margin-bottom:12px;">
+          💡 github.com → Settings → Developer settings → Tokens (classic) → Generate → scope: <b>repo</b>
+        </div>
+        <button class="btn btn-primary" onclick="connectGitHub()" id="ghConnectBtn" style="width:100%;">🔗 Connect & Sync</button>
+      </div>
+      <div id="ghConnectedSection" style="display:none;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn" onclick="pushToGitHub()" style="flex:1;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;">⬆️ Save</button>
+          <button class="btn" onclick="pullFromGitHub()" style="flex:1;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;font-weight:800;">⬇️ Load</button>
+        </div>
+        <button class="btn" onclick="disconnectGitHub()" style="width:100%;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);color:var(--red);font-size:0.78rem;margin-top:4px;">Disconnect</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== IMAGE VIEWER ========== -->
 <div id="pauseOverlay">
   <div style="font-size:3rem;">⏸️</div>
   <div class="pause-title">Exam Paused</div>
@@ -2014,30 +2045,33 @@ function srsNewCards(){
 }
 
 function renderSrsPage(){
+  const el     = document.getElementById('srsPageContent');
   const due    = srsDueToday().length;
-  const newCards = srsNewCards().slice(0, srsSettings.newPerDay||10).length;
-  const total  = due + newCards;
-  const el     = document.getElementById('srsPageStats');
-  el.innerHTML = `<div class="stat-row" style="margin-bottom:0;">
-    <div class="stat-box"><div class="stat-val" style="font-size:1.2rem;">${due}</div><div class="stat-lbl">Due Today</div></div>
-    <div class="stat-box"><div class="stat-val" style="font-size:1.2rem;">${newCards}</div><div class="stat-lbl">New</div></div>
-    <div class="stat-box"><div class="stat-val" style="font-size:1.2rem;">${total}</div><div class="stat-lbl">Total</div></div>
-  </div>`;
-  const btn = document.getElementById('srsStartBtn');
-  btn.disabled = total === 0;
-  btn.style.opacity = total === 0 ? '0.5' : '1';
-  if(total===0) btn.textContent = '✅ All caught up!';
-  else btn.textContent = `Start Review Session (${total}) →`;
+  const newC   = srsNewCards().slice(0, srsSettings.newPerDay||10).length;
+  const total  = Object.keys(srsData).length;
 
-  // Test button
-  const testStats = document.getElementById('srsTestStats');
-  const testBtn   = document.getElementById('srsTestBtn');
-  const allSrs    = Object.keys(srsData).length;
-  testStats.innerHTML = `<div style="font-size:0.8rem;color:var(--text2);">📦 Total SRS cards: <b style="color:var(--text);">${allSrs}</b> &nbsp;|&nbsp; 🔥 Due today: <b style="color:#6ee7b7;">${due}</b></div>`;
-  testBtn.disabled = due === 0;
-  testBtn.style.opacity = due === 0 ? '0.5' : '1';
-  if(due===0) testBtn.textContent = '✅ Koi due cards nahi!';
-  else testBtn.textContent = `🚀 Start Smart Test (${due} questions) →`;
+  el.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" style="-webkit-text-fill-color:var(--red);">${due}</div><div class="stat-lbl">Due Today</div></div>
+      <div class="stat-box"><div class="stat-val" style="-webkit-text-fill-color:var(--cyan);">${newC}</div><div class="stat-lbl">New Cards</div></div>
+      <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-lbl">Total Cards</div></div>
+    </div>
+    ${due>0||newC>0 ? `
+    <button class="btn btn-primary" onclick="startSrsSession()" style="margin-bottom:8px;">🧠 Start Smart Review (${due+newC} cards)</button>` : `
+    <div class="card" style="text-align:center;padding:24px;">
+      <div style="font-size:2rem;margin-bottom:10px;">🎉</div>
+      <div style="font-weight:700;margin-bottom:6px;">All caught up!</div>
+      <div style="font-size:0.8rem;color:var(--muted);">No cards due. Come back tomorrow!</div>
+    </div>`}
+    <button class="btn btn-ghost" onclick="openPopup('popSrsTest')" style="margin-bottom:14px;">📝 Start Smart Test</button>
+    <div class="sec-label">💡 How It Works</div>
+    <div class="card" style="font-size:0.8rem;color:var(--text2);line-height:1.8;">
+      Smart Review uses spaced repetition — cards you find hard appear more often, easy cards less often. Complete tests to add cards to your review deck.
+    </div>
+  `;
+  // Update placeholder
+  const qcInp = document.getElementById('srsTestQCount');
+  if(qcInp) qcInp.placeholder = `0 = all (${due} due)`;
 }
 
 function startSrsSession(){
@@ -2056,20 +2090,58 @@ let srsTestQuestions = [];
 let srsTestIdx       = 0;
 let srsTestAnswers   = [];
 let srsTestStartTime = 0;
+let srsTestTimerInt  = null;
+let srsTestTimeLeft  = 0;
+let srsTestMarksC    = 1;
+let srsTestMarksW    = -0.25;
 
-function startSrsTest(){
+function startSrsTestFromPopup(){
+  const qCount  = parseInt(document.getElementById('srsTestQCount').value)||0;
+  const timeMins= parseInt(document.getElementById('srsTestTime').value)||0;
+  const mc      = parseFloat(document.getElementById('srsTestMC').value)||1;
+  const mw      = parseFloat(document.getElementById('srsTestMW').value);
+  const marksW  = isNaN(mw) ? -0.25 : mw;
+  closePopup('popSrsTest');
+  startSrsTest(qCount, timeMins, mc, marksW);
+}
+
+function startSrsTest(qCount, timeMins, mc, mw){
   const due = srsDueToday();
-  if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  srsTestQuestions = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  if(!due.length){ toast('Koi due cards nahi!','error'); return; }
+  let cards = shuffleArr([...due]);
+  if(qCount>0) cards = cards.slice(0, qCount);
+  srsTestQuestions = cards;
   srsTestIdx       = 0;
   srsTestAnswers   = [];
   srsTestStartTime = Date.now();
+  srsTestMarksC    = mc !== undefined ? mc : 1;
+  srsTestMarksW    = mw !== undefined ? mw : -0.25;
+  clearInterval(srsTestTimerInt);
+  if(timeMins>0){
+    srsTestTimeLeft = timeMins*60;
+    srsTestTimerInt = setInterval(()=>{
+      srsTestTimeLeft--;
+      updateSrsTestTimer();
+      if(srsTestTimeLeft<=0){ clearInterval(srsTestTimerInt); showSrsTestResult(); }
+    },1000);
+    updateSrsTestTimer();
+  } else {
+    const td = document.getElementById('srsTestTimerDisp');
+    if(td) td.textContent='';
+  }
   showSrsTestView();
 }
 
 function shuffleOpts(opts, ans){
   // keep opts order as-is (answer keys already mapped)
   return opts;
+}
+
+function updateSrsTestTimer(){
+  const m = Math.floor(srsTestTimeLeft/60);
+  const s = srsTestTimeLeft%60;
+  const td = document.getElementById('srsTestTimerDisp');
+  if(td) td.textContent = `⏱️ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 function showSrsTestView(){
@@ -2080,6 +2152,7 @@ function showSrsTestView(){
 }
 
 function exitSrsTest(){
+  clearInterval(srsTestTimerInt);
   document.getElementById('srsTestView').style.display = 'none';
   showMainView();
   renderHome();
@@ -2273,10 +2346,10 @@ function renderSrsCard(){
       ${q.exp?`<div class="srs-exp">💡 ${q.exp}</div>`:''}
       <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">How well did you know this?</div>
       <div class="srs-rate-btns">
-        <button class="srs-btn again" onclick="rateSrs(0)">😵 Again<span class="srs-btn-label">Forgot</span></button>
-        <button class="srs-btn hard"  onclick="rateSrs(1)">😓 Hard<span class="srs-btn-label">Struggled</span></button>
-        <button class="srs-btn good"  onclick="rateSrs(2)">🙂 Good<span class="srs-btn-label">Recalled</span></button>
-        <button class="srs-btn easy"  onclick="rateSrs(3)">😎 Easy<span class="srs-btn-label">Perfect</span></button>
+        <button class="srs-btn again" onclick="rateSrs(0)">🔴 Again<span class="srs-btn-label">&lt; 1 min</span></button>
+        <button class="srs-btn hard"  onclick="rateSrs(1)">🟡 Hard<span class="srs-btn-label">1 day</span></button>
+        <button class="srs-btn good"  onclick="rateSrs(2)">🔵 Good<span class="srs-btn-label">3 days</span></button>
+        <button class="srs-btn easy"  onclick="rateSrs(3)">🟢 Easy<span class="srs-btn-label">7 days</span></button>
       </div>
     </div>
   </div>`;
