@@ -1629,6 +1629,7 @@ function calculateMcqResult(){
     date:      new Date().toISOString(),
     correct, wrong, skip, total, pct,
     marks, maxMarks, marksCorrect: mc, marksWrong: mw,
+    timeTaken: [...qTimeTaken],
     details
   };
 
@@ -1671,6 +1672,7 @@ function calculatePdfResult(){
     correct, wrong, skip,
     answered: correct+wrong,
     total, pct, marks, maxMarks, marksCorrect: mc, marksWrong: mw,
+    timeTaken: [...qTimeTaken],
     details
   };
   testHistory.unshift(record);
@@ -1763,8 +1765,13 @@ function renderReviewItems(){
     const cls = d.status==='correct'?'rc':d.status==='wrong'?'rw':'rsk';
     const icon = d.status==='correct'?'✅':d.status==='wrong'?'❌':'⬜';
     const q = d.q;
+    const t = record.timeTaken && record.timeTaken[i];
+    const timeStr = t ? (t>=60 ? `${Math.floor(t/60)}m ${t%60}s` : `${t}s`) : null;
     return `<div class="review-item ${cls}">
-      <div class="rv-st" style="color:${d.status==='correct'?'var(--green)':d.status==='wrong'?'var(--red)':'var(--gold)'};">${icon} Q${i+1} — ${d.status.toUpperCase()}${d.flagged?' 🔖':''}</div>
+      <div class="rv-st" style="display:flex;justify-content:space-between;align-items:center;color:${d.status==='correct'?'var(--green)':d.status==='wrong'?'var(--red)':'var(--gold)'};">
+        <span>${icon} Q${i+1} — ${d.status.toUpperCase()}${d.flagged?' 🔖':''}</span>
+        ${timeStr ? `<span style="color:var(--muted);font-size:0.68rem;font-weight:700;">⏱️ ${timeStr}</span>` : ''}
+      </div>
       ${q.q ? `<div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;line-height:1.5;">${q.q}</div>` : ''}
       ${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:10px;" onclick="openIv(this.src)">` : ''}
       ${d.status!=='skip'?`
@@ -2207,6 +2214,7 @@ function renderSrsTestQ(){
           return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
         }).join('')}
       </div>` : '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:16px;">Image-based question — answer shown after submit</div>'}
+      <div id="srsTestNextBar" style="display:none;margin-bottom:10px;"></div>
       <div style="display:flex;gap:10px;">
         <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
         <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected||null)" disabled style="flex:2;padding:12px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
@@ -2263,13 +2271,12 @@ function submitSrsTestQ(selected){
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
   if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; }
 
-  // Show next button
-  const card2 = srsTestQuestions[srsTestIdx]; // for closure
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-  nextBtn.style.cssText='margin-top:10px;width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
-  nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
-  document.querySelector('#srsTestBody .srs-card').appendChild(nextBtn);
+  // Show next button above skip/submit
+  const nextBar = document.getElementById('srsTestNextBar');
+  if(nextBar){
+    nextBar.style.display = 'block';
+    nextBar.innerHTML = `<button onclick="srsTestIdx++;renderSrsTestQ();" style="width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;">${srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →'}</button>`;
+  }
 }
 
 function showSrsTestResult(){
