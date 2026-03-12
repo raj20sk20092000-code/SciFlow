@@ -313,7 +313,6 @@ body::before{
 
 /* Options */
 .eq-opts{display:flex;flex-direction:column;gap:8px;}
-.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
 .eq-opt{
   display:flex;align-items:center;gap:11px;
   padding:13px 14px;background:var(--s2);
@@ -557,6 +556,51 @@ body::before{
 .streak-info{flex:1;}
 .streak-lbl{font-size:0.75rem;font-weight:700;color:var(--gold);}
 .streak-sub{font-size:0.68rem;color:var(--muted);}
+
+/* ---- PAUSE OVERLAY ---- */
+#pauseOverlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(8,11,18,.97);
+  flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:30px;
+}
+#pauseOverlay.active{display:flex;}
+.pause-title{font-size:1.4rem;font-weight:900;margin-top:8px;}
+.pause-timer{font-size:2.5rem;font-weight:900;font-family:'JetBrains Mono',monospace;
+  background:linear-gradient(135deg,var(--acc),var(--acc3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pause-sub{font-size:0.82rem;color:var(--muted);}
+
+/* ---- BOOKMARK BUTTON ---- */
+.bm-btn{
+  background:none;border:none;font-size:1.1rem;cursor:pointer;
+  padding:2px 6px;border-radius:6px;transition:background .15s;
+}
+.bm-btn:active{background:rgba(99,102,241,.2);}
+
+/* ---- NOTE AREA ---- */
+.note-toggle{
+  margin-top:10px;padding:6px 12px;background:var(--s3);
+  border:1px dashed var(--border2);border-radius:8px;
+  color:var(--muted);font-size:0.75rem;font-weight:700;cursor:pointer;
+  width:100%;text-align:left;
+}
+.note-area{
+  width:100%;min-height:80px;margin-top:8px;
+  background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.25);
+  border-radius:8px;padding:10px;color:var(--text);font-size:0.82rem;
+  font-family:'Outfit',sans-serif;resize:vertical;
+}
+.note-area:focus{outline:none;border-color:var(--cyan);}
+
+/* ---- QDOT FLAGGED ---- */
+.qdot.flagged{background:rgba(245,158,11,.2);border-color:var(--gold);color:var(--gold);font-size:0.7rem;}
+
+/* ---- ANALYTICS ---- */
+.analytics-bar-wrap{margin-bottom:12px;}
+.analytics-bar-label{display:flex;justify-content:space-between;font-size:0.78rem;font-weight:700;margin-bottom:4px;}
+.analytics-bar-track{height:8px;background:var(--s3);border-radius:4px;overflow:hidden;}
+.analytics-bar-fill{height:100%;border-radius:4px;transition:width .5s ease;}
 </style>
 </head>
 <body>
@@ -653,7 +697,7 @@ body::before{
         Due cards se ek proper test lo — MCQ format mein! Score milega end mein aur galat questions phir SRS mein aayenge.
       </div>
       <div id="srsTestStats" style="margin-bottom:12px;"></div>
-      <button class="btn" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;" onclick="openSrsTestPopup()" id="srsTestBtn">🚀 Start Smart Test →</button>
+      <button class="btn" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-weight:800;" onclick="startSrsTest()" id="srsTestBtn">🚀 Start Smart Test →</button>
     </div>
 
     <div class="sec-label">SRS Settings</div>
@@ -691,17 +735,13 @@ body::before{
       </div>
     </div>
 
-    <div class="sec-label">⚠️ Danger Zone</div>
-    <div class="card" style="border-color:rgba(244,63,94,.3);">
-      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:12px;line-height:1.6;">
-        Clear all saved data — test history, SRS cards, streak. This cannot be undone!
-      </div>
-      <button class="btn" onclick="clearAllData()" style="width:100%;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.4);color:var(--red);font-weight:800;">
-        🗑️ Clear All Data
-      </button>
-    </div>
-
     <div style="height:20px;"></div>
+  </div>
+
+  <!-- ANALYTICS PAGE -->
+  <div class="page" id="page-analytics">
+    <div style="height:14px;"></div>
+    <div id="analyticsContent"></div>
   </div>
 
 </div><!-- end mainScroll -->
@@ -712,26 +752,24 @@ body::before{
   <div class="bnav-item" id="bnav-papers" onclick="goPage('papers')"><span class="bnav-icon">📄</span>Papers</div>
   <div class="bnav-item" id="bnav-results" onclick="goPage('results')"><span class="bnav-icon">📊</span>Results</div>
   <div class="bnav-item" id="bnav-review" onclick="goPage('review')"><span class="bnav-icon">🧠</span>Review</div>
+  <div class="bnav-item" id="bnav-analytics" onclick="goPage('analytics')"><span class="bnav-icon">📈</span>Stats</div>
 </div>
 
 <!-- ========== SRS TEST VIEW ========== -->
-<div id="srsTestView" style="display:none;flex-direction:column;height:100%;position:fixed;inset:0;z-index:60;background:var(--bg);">
+<div id="srsTestView" style="display:none;flex-direction:column;height:100%;position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;">
   <div class="srs-topbar">
     <button onclick="exitSrsTest()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;">←</button>
     <div style="flex:1;text-align:center;font-size:0.88rem;font-weight:800;">📝 Smart Review Test</div>
-    <div id="srsTestTimerDisplay" style="font-size:0.75rem;font-weight:700;color:#6ee7b7;font-family:'JetBrains Mono',monospace;margin-right:6px;"></div>
     <div id="srsTestCounter" style="font-size:0.78rem;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;">0/0</div>
   </div>
   <div class="srs-prog-bar"><div class="srs-prog-fill" id="srsTestProgFill" style="width:0%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div></div>
-  <div style="flex:1;overflow-y:auto;padding:14px;padding-bottom:20px;" id="srsTestBody"></div>
-  <div id="srsNextFixed" style="display:none;padding:12px 14px;background:rgba(8,11,18,.97);border-top:1px solid var(--border);">
-    <button id="srsNextFixedBtn" onclick="" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:11px;font-size:0.95rem;font-weight:800;color:white;cursor:pointer;">Next →</button>
-  </div>
+  <div style="flex:1;padding:14px;" id="srsTestBody"></div>
 </div>
 <div id="examView">
   <div class="exam-topbar">
     <button onclick="confirmExitExam()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;">←</button>
     <div class="exam-title" id="examTitle">Test</div>
+    <button onclick="pauseExam()" id="pauseBtn" style="background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer;padding:4px 8px;">⏸️</button>
     <div class="timer-display" id="timerDisplay">00:00</div>
   </div>
   <div class="exam-prog">
@@ -812,6 +850,7 @@ body::before{
         <button class="btn btn-ghost" onclick="toggleReview()">📖 Review</button>
         <button class="btn btn-gold" onclick="retakeTest()">🔄 Retake</button>
       </div>
+      <div id="extraResultBtns" style="margin-bottom:8px;"></div>
       <button class="btn btn-primary" onclick="backToHome()" style="margin-bottom:14px;">🏠 Back to Home</button>
       <div id="reviewArea" style="display:none;"></div>
     </div>
@@ -859,7 +898,7 @@ body::before{
         </div>
         <div class="fg">
           <label>❌ Marks (wrong)</label>
-          <input type="number" class="inp" id="marksWrongInput" value="-0.25" step="0.25">
+          <input type="number" class="inp" id="marksWrongInput" value="0" step="0.25">
         </div>
       </div>
     </div>
@@ -899,44 +938,14 @@ body::before{
   </div>
 </div>
 
-<!-- ========== POPUP: SMART TEST SETTINGS ========== -->
-<div class="popup-overlay" id="srsTestPopup">
-  <div class="popup-sheet">
-    <div class="popup-handle"></div>
-    <div class="popup-header">
-      <button class="popup-close" onclick="closePopup('srsTestPopup')" style="margin-right:8px;">←</button>
-      <span style="font-size:1.3rem;">🧠</span>
-      <span class="popup-title">Smart Review Test Settings</span>
-      <button class="popup-close" onclick="closePopup('srsTestPopup')">✕</button>
-    </div>
-    <div class="popup-body">
-      <div style="font-size:0.78rem;color:var(--text2);margin-bottom:14px;line-height:1.6;">
-        Due cards se test lo — apni settings choose karo 👇
-      </div>
-      <div id="srsTestPopupStats" style="margin-bottom:14px;"></div>
-      <div class="fg">
-        <label>📝 Number of Questions — 0 = all due cards</label>
-        <input type="number" class="inp" id="srsTestCountInput" value="0" min="0" placeholder="0 = sabhi due cards">
-      </div>
-      <div class="fg">
-        <label>⏱️ Time Limit (minutes) — 0 = no limit</label>
-        <input type="number" class="inp" id="srsTestTimeInput" value="15" min="0" max="180">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="fg">
-          <label>✅ Marks (correct)</label>
-          <input type="number" class="inp" id="srsTestMarksCorrect" value="1" min="0" step="0.25">
-        </div>
-        <div class="fg">
-          <label>❌ Marks (wrong)</label>
-          <input type="number" class="inp" id="srsTestMarksWrong" value="-0.25" step="0.25">
-        </div>
-      </div>
-    </div>
-    <div class="popup-footer">
-      <button class="btn btn-primary" onclick="startSrsTestFromPopup()">🚀 Start Smart Test</button>
-    </div>
-  </div>
+<!-- ========== PAUSE OVERLAY ========== -->
+<div id="pauseOverlay">
+  <div style="font-size:3rem;">⏸️</div>
+  <div class="pause-title">Exam Paused</div>
+  <div class="pause-timer" id="pauseTimerShow">--:--</div>
+  <div class="pause-sub">Timer is stopped. Resume when ready.</div>
+  <button class="btn btn-primary" style="width:200px;margin-top:10px;" onclick="resumeExam()">▶ Resume</button>
+  <button onclick="confirmExitExam()" style="background:none;border:none;color:var(--red);font-size:0.82rem;font-weight:700;cursor:pointer;margin-top:8px;">Exit Test</button>
 </div>
 
 <!-- ========== IMAGE VIEWER ========== -->
@@ -993,6 +1002,12 @@ let pdfDoc         = null;
 let pdfPage        = 1;
 let retakeData     = null;
 
+// NEW FEATURES
+let bookmarkedQs  = [];   // flagged question indices during exam
+let qNotes        = {};   // qIdx → note string
+let examPaused    = false;
+let pausedTimeLeft = 0;
+
 // SRS session
 let srsQueue       = [];
 let srsIdx         = 0;
@@ -1039,131 +1054,23 @@ function saveSrsSettings(){
   saveLocalData();
 }
 
-async function clearAllData(){
-  if(!confirm('Are you sure? All test history, SRS cards and streak will be deleted!')) return;
-  testHistory = [];
-  srsData     = {};
-  streakData  = {dates:[]};
-  srsSettings = {newPerDay:10};
-  try {
-    await dbSet('testHistory', testHistory);
-    await dbSet('srsData',     srsData);
-    await dbSet('streakData',  streakData);
-    await dbSet('srsSettings', srsSettings);
-  } catch(e){}
-  renderHome();
-  renderSrsPage();
-  alert('✅ All data cleared!');
-}
 
 /* ============================================================
    REPO — FETCH FROM GITHUB
    ============================================================ */
-/* ---- DEMO DATA (used when CONFIG.repoBaseUrl === '__DEMO__') ---- */
-const DEMO_INDEX = {
-  name: "Demo Test Series",
-  description: "Sample papers to demonstrate SciFlow",
-  papers: [
-    {
-      id: "physics_motion",
-      name: "Physics — Motion & Laws",
-      type: "mcq",
-      subject: "Physics",
-      difficulty: "Medium",
-      questions: 5,
-      time: 10,
-      description: "Newton's laws, velocity, acceleration",
-      file: "__demo__/physics_motion.json"
-    },
-    {
-      id: "biology_cell",
-      name: "Biology — Cell Structure",
-      type: "mcq",
-      subject: "Biology",
-      difficulty: "Easy",
-      questions: 5,
-      time: 8,
-      description: "Cell organelles and functions",
-      file: "__demo__/biology_cell.json"
-    },
-    {
-      id: "math_algebra",
-      name: "Mathematics — Algebra",
-      type: "mcq",
-      subject: "Mathematics",
-      difficulty: "Easy",
-      questions: 5,
-      time: 8,
-      description: "Linear equations, basic algebra",
-      file: "__demo__/math_algebra.json"
-    },
-    {
-      id: "general_science",
-      name: "General Science Mixed",
-      type: "mcq",
-      subject: "General",
-      difficulty: "Hard",
-      questions: 8,
-      time: 15,
-      description: "Mixed science concepts",
-      file: "__demo__/general_science.json"
-    }
-  ]
-};
-
-const DEMO_PAPERS = {
-  "__demo__/physics_motion.json": [
-    {q:"Newton ke pehle niyam ko kya kehte hain?",opts:["Inertia ka niyam","Force ka niyam","Action-Reaction","Momentum niyam"],ans:["A"],exp:"First Law = Law of Inertia — ek object rest ya motion mein rehta hai jab tak external force na lage"},
-    {q:"F = ma kaunse Newton niyam ka formula hai?",opts:["First Law","Second Law","Third Law","Kepler's Law"],ans:["B"],exp:"Newton's Second Law: F = mass × acceleration"},
-    {q:"Velocity ka SI unit kya hai?",opts:["m/s²","km/h","m/s","N"],ans:["C"],exp:"Velocity = displacement/time, unit = metre per second (m/s)"},
-    {q:"Mass 5 kg aur acceleration 4 m/s² ho toh force kitni hogi?",opts:["1.25 N","9 N","20 N","25 N"],ans:["C"],exp:"F = ma = 5 × 4 = 20 N"},
-    {q:"Har action ke barabar vipreet reaction hoti hai — yeh kaunsa niyam hai?",opts:["First Law","Second Law","Third Law","Gravity Law"],ans:["C"],exp:"Newton's Third Law — Action-Reaction principle"}
-  ],
-  "__demo__/biology_cell.json": [
-    {q:"Cell ka 'power house' kise kehte hain?",opts:["Nucleus","Ribosome","Mitochondria","Golgi Body"],ans:["C"],exp:"Mitochondria ATP banata hai — isliye power house kehte hain"},
-    {q:"Plant cell mein kaunsi cheez animal cell mein nahi hoti?",opts:["Mitochondria","Cell Wall","Ribosome","Nucleus"],ans:["B"],exp:"Cell Wall sirf plant cells mein hoti hai — cellulose ki bani hoti hai"},
-    {q:"DNA kahan store hota hai?",opts:["Cytoplasm","Ribosome","Nucleus","Cell Membrane"],ans:["C"],exp:"DNA nucleus ke andar hota hai — yahi genetic information ka center hai"},
-    {q:"Photosynthesis kahan hoti hai?",opts:["Mitochondria","Chloroplast","Nucleus","Vacuole"],ans:["B"],exp:"Chloroplast mein chlorophyll hota hai jo photosynthesis karta hai"},
-    {q:"Protein synthesis kahan hoti hai?",opts:["Nucleus","Mitochondria","Ribosome","Golgi Body"],ans:["C"],exp:"Ribosomes — ye amino acids ko link karke proteins banate hain"}
-  ],
-  "__demo__/math_algebra.json": [
-    {q:"2x + 6 = 14 mein x = ?",opts:["3","4","5","6"],ans:["B"],exp:"2x = 14-6 = 8, x = 4"},
-    {q:"x² - 16 = 0 mein x ki values kya hain?",opts:["±2","±4","±8","±16"],ans:["B"],exp:"x² = 16, x = ±4"},
-    {q:"Linear equation mein variable ki highest power kya hoti hai?",opts:["0","1","2","3"],ans:["B"],exp:"Linear equation definition: variable power = 1"},
-    {q:"3x - 9 = 0 mein x = ?",opts:["1","2","3","9"],ans:["C"],exp:"3x = 9, x = 3"},
-    {q:"(a + b)² = ?",opts:["a² + b²","a² + 2ab + b²","a² - b²","2a + 2b"],ans:["B"],exp:"(a+b)² = a² + 2ab + b² — yeh ek important algebraic identity hai"}
-  ],
-  "__demo__/general_science.json": [
-    {q:"Prakash ki speed vacuum mein kitni hai?",opts:["3×10⁶ m/s","3×10⁸ m/s","3×10¹⁰ m/s","3×10⁴ m/s"],ans:["B"],exp:"c = 3×10⁸ m/s (approximately 3 lakh km/s)"},
-    {q:"Paani ka chemical formula kya hai?",opts:["CO₂","H₂O₂","H₂O","NaCl"],ans:["C"],exp:"Water = H₂O — 2 hydrogen + 1 oxygen atom"},
-    {q:"Sabse chhota planet kaun sa hai?",opts:["Mars","Mercury","Venus","Pluto"],ans:["B"],exp:"Mercury — solar system ka sabse chhota planet"},
-    {q:"Ek healthy adult ki normal heart rate kitni hoti hai?",opts:["40-50 bpm","60-100 bpm","120-150 bpm","150-200 bpm"],ans:["B"],exp:"Normal resting heart rate = 60-100 beats per minute"},
-    {q:"Sound ki speed air mein approximately kitni hai?",opts:["300 m/s","343 m/s","1000 m/s","150 m/s"],ans:["B"],exp:"Speed of sound in air ≈ 343 m/s at 20°C"},
-    {q:"Photosynthesis ka equation kya hai?",opts:["CO₂ + H₂O → Glucose + O₂","O₂ + H₂O → Glucose","Glucose → CO₂ + H₂O","CO₂ → O₂ + Glucose"],ans:["A"],exp:"6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"},
-    {q:"Human body mein kitni bones hoti hain (adult)?",opts:["106","206","306","406"],ans:["B"],exp:"Adult human body mein 206 bones hoti hain"},
-    {q:"Gravity acceleration (g) ki approximate value kya hai?",opts:["9.8 m/s²","3.8 m/s²","1.6 m/s²","19.8 m/s²"],ans:["A"],exp:"g ≈ 9.8 m/s² Earth surface pe"}
-  ]
-};
-
 async function fetchRepo(){
   setRepoDot('loading');
   document.getElementById('repoName').textContent = CONFIG.repoName || 'Loading...';
-  document.getElementById('repoUrl').textContent = CONFIG.repoBaseUrl === '__DEMO__' ? '📦 Demo Mode' : CONFIG.repoBaseUrl;
-
-  try {
-    if(CONFIG.repoBaseUrl === '__DEMO__'){
-      repoIndex = DEMO_INDEX;
-    } else {
-      const url = CONFIG.repoBaseUrl + CONFIG.indexFile;
-      const res = await fetch(url);
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      repoIndex = await res.json();
-    }
-
-    allPapers = repoIndex.papers || [];
-    document.getElementById('repoName').textContent = repoIndex.name || CONFIG.repoName;
-    document.getElementById('repoUrl').textContent = CONFIG.repoBaseUrl === '__DEMO__' ? '📦 Demo Mode — Replace CONFIG.repoBaseUrl to use your repo' : CONFIG.repoBaseUrl;
+  document.getElementById('repoUrl').textContent  = CONFIG.repoBaseUrl;
+  try{
+    const url  = CONFIG.repoBaseUrl + CONFIG.indexFile;
+    const resp = await fetch(url+'?t='+Date.now());
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    repoIndex  = data;
+    allPapers  = data.papers || [];
     setRepoDot('ok');
+    document.getElementById('repoName').textContent = data.name || CONFIG.repoName;
     document.getElementById('hs-papers').textContent = allPapers.length;
     renderPapers();
     renderRecent();
@@ -1171,7 +1078,7 @@ async function fetchRepo(){
   } catch(e){
     setRepoDot('error');
     document.getElementById('repoName').textContent = '⚠️ Repository Error';
-    document.getElementById('repoUrl').textContent = e.message;
+    document.getElementById('repoUrl').textContent  = e.message;
     toast('❌ Could not load repository', 'error');
   }
 }
@@ -1184,13 +1091,10 @@ function setRepoDot(state){
 function refreshRepo(){ fetchRepo(); }
 
 async function fetchPaperQuestions(paper){
-  if(CONFIG.repoBaseUrl === '__DEMO__'){
-    return DEMO_PAPERS[paper.file] || [];
-  }
-  const url = CONFIG.repoBaseUrl + paper.file;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('Failed to load: ' + paper.file);
-  return await res.json();
+  const url  = CONFIG.repoBaseUrl + paper.file;
+  const resp = await fetch(url+'?t='+Date.now());
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  return await resp.json();
 }
 
 /* ============================================================
@@ -1206,6 +1110,7 @@ function goPage(name){
   if(name==='results') renderHistory();
   if(name==='review')  renderSrsPage();
   if(name==='home')    renderHome();
+  if(name==='analytics') renderAnalytics();
 }
 
 function showExamView(){
@@ -1308,7 +1213,7 @@ function openPaper(id){
   document.getElementById('testTimeInput').value = paper.time || 30;
   document.getElementById('testNumInput').value = paper.questions || 10;
   document.getElementById('marksCorrectInput').value = paper.marksCorrect !== undefined ? paper.marksCorrect : 1;
-  document.getElementById('marksWrongInput').value = (paper.marksWrong !== undefined && paper.marksWrong !== 0) ? paper.marksWrong : -0.25;
+  document.getElementById('marksWrongInput').value = paper.marksWrong !== undefined ? paper.marksWrong : 0;
   document.getElementById('mcqNumWrap').style.display = paper.type==='pdf' ? 'block' : 'block';
 
   let meta = '';
@@ -1329,8 +1234,7 @@ async function startPaperTest(){
   timeLeft  = (parseInt(document.getElementById('testTimeInput').value)||30) * 60;
   pdfQCount = parseInt(document.getElementById('testNumInput').value)||10;
   currentPaper.marksCorrect = parseFloat(document.getElementById('marksCorrectInput').value) || 1;
-  currentPaper.marksWrong = parseFloat(document.getElementById('marksWrongInput').value);
-  if(isNaN(currentPaper.marksWrong) || currentPaper.marksWrong === 0) currentPaper.marksWrong = -0.25;
+  currentPaper.marksWrong   = parseFloat(document.getElementById('marksWrongInput').value)   || 0;
 
   toast('⏳ Loading questions...', 'success');
 
@@ -1341,6 +1245,9 @@ async function startPaperTest(){
     isPdfTest = currentPaper.type === 'pdf';
     answers = {};
     pdfTestAnsKey = {};
+    bookmarkedQs = [];
+    qNotes = {};
+    examPaused = false;
     currentQs = isPdfTest ? qs.slice(0, pdfQCount) : shuffleArr([...qs]).slice(0, pdfQCount);
     qTimeTaken = new Array(currentQs.length).fill(0);
     qStartTime = Date.now();
@@ -1370,48 +1277,32 @@ function setupMcqExam(){
   updateExamProg();
 }
 
-function isImageOnlyOpts(opts){
-  return !opts || !opts.length || opts.every(o => o==='A'||o==='B'||o==='C'||o==='D');
-}
-
-function renderOptsHtml(opts, selectedArr, qIdx, mode){
-  // mode: 'exam' or 'srs'
-  const imgOnly = isImageOnlyOpts(opts);
-  if(imgOnly){
-    return ['A','B','C','D'].map(letter=>{
-      const sel = selectedArr && selectedArr.includes(letter);
-      const fn = mode==='exam' ? `toggleOpt(${qIdx},'${letter}')` : `selectSrsTestOpt('${letter}')`;
-      const id = mode==='srs' ? `id="sto_${letter}"` : `id="eopt_${qIdx}_${letter}"`;
-      return `<div ${id} onclick="${fn}" style="padding:24px 10px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:2px solid ${sel?'var(--acc2)':'var(--border)'};border-radius:12px;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all .2s;text-align:center;line-height:1;color:${sel?'#a5b4fc':'var(--text2)'};">${letter}</div>`;
-    }).join('');
-  } else {
-    return (opts||[]).map((o,j)=>{
-      const letter = String.fromCharCode(65+j);
-      const sel = selectedArr && selectedArr.includes(letter);
-      if(mode==='exam'){
-        return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${qIdx},'${letter}')">
-          <div class="opt-key">${letter}</div><div>${o}</div>
-        </div>`;
-      } else {
-        return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:${sel?'rgba(99,102,241,.18)':'var(--s2)'};border:1.5px solid ${sel?'rgba(99,102,241,.6)':'var(--border)'};border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
-      }
-    }).join('');
-  }
-}
-
 function renderMcqQuestions(){
   const list = document.getElementById('examQList');
   list.innerHTML = currentQs.map((q,i)=>{
-    const imgOnly = isImageOnlyOpts(q.opts);
-    const optsHtml = renderOptsHtml(q.opts, answers[i]||[], i, 'exam');
+    const opts = (q.opts||[]).map((o,j)=>{
+      const letter = String.fromCharCode(65+j);
+      const sel = (answers[i]||[]).includes(letter);
+      return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${i},'${letter}')">
+        <div class="opt-key">${letter}</div>
+        <div>${o}</div>
+      </div>`;
+    }).join('');
+    const isBm = bookmarkedQs.includes(i);
     return `<div class="exam-qcard" id="qcard-${i}">
       <div class="eq-head">
         <div class="eq-num">Q${i+1}</div>
         ${q.subject ? `<div class="eq-type">${q.subject}</div>` : ''}
+        <div style="flex:1;"></div>
+        <button class="bm-btn" id="bm-${i}" onclick="toggleBookmark(${i})">${isBm?'🔖':'🏷️'}</button>
       </div>
-      ${q.q ? `<div class="eq-text">${q.q}</div>` : ''}
-      ${q.img ? `<img class="eq-img" src="${q.img}" style="background:#fff;" onclick="openIv(this.src)">` : ''}
-      <div class="${imgOnly?'opts-grid':'eq-opts'}" id="opts-${i}">${optsHtml}</div>
+      ${q.q?`<div class="eq-text">${q.q}</div>`:''}
+      ${q.img ? `<img class="eq-img" src="${q.img}" onclick="openIv(this.src)">` : ''}
+      <div class="eq-opts" id="opts-${i}">${opts}</div>
+      <button class="note-toggle" onclick="toggleNoteArea(${i})">📝 ${qNotes[i]?'Edit Note':'Add Note'}</button>
+      <div id="noteArea-${i}" style="display:${qNotes[i]?'block':'none'};">
+        <textarea class="note-area" id="noteInp-${i}" placeholder="Write your note here..." onblur="saveNote(${i})">${qNotes[i]||''}</textarea>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1431,9 +1322,14 @@ function toggleOpt(qIdx, letter){
   const container = document.getElementById('opts-'+qIdx);
   if(container){
     const q = currentQs[qIdx];
-    const imgOnly = isImageOnlyOpts(q.opts);
-    container.className = imgOnly ? 'opts-grid' : 'eq-opts';
-    container.innerHTML = renderOptsHtml(q.opts, answers[qIdx], qIdx, 'exam');
+    container.innerHTML = (q.opts||[]).map((o,j)=>{
+      const l = String.fromCharCode(65+j);
+      const sel = answers[qIdx].includes(l);
+      return `<div class="eq-opt ${sel?'sel':''}" onclick="toggleOpt(${qIdx},'${l}')">
+        <div class="opt-key">${l}</div>
+        <div>${o}</div>
+      </div>`;
+    }).join('');
   }
   renderQdots();
   updateExamProg();
@@ -1441,12 +1337,11 @@ function toggleOpt(qIdx, letter){
 
 function renderQdots(){
   const el = document.getElementById('examQdots');
-  el.innerHTML = currentQs.map((_,i)=>`<div class="qdot ${answers[i]&&answers[i].length?'answered':''}" onclick="scrollToQ(${i})">${i+1}</div>`).join('');
-}
-
-function scrollToQ(i){
-  const el = document.getElementById('qcard-'+i);
-  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.innerHTML = currentQs.map((_,i)=>{
+    const done = answers[i]&&answers[i].length;
+    const flagged = bookmarkedQs.includes(i);
+    return `<div class="qdot${done?' answered':''}${flagged?' flagged':''}" onclick="scrollToQ(${i})">${flagged?'🔖':(i+1)}</div>`;
+  }).join('');
 }
 
 function updateExamProg(){
@@ -1615,12 +1510,34 @@ function updateTimerDisplay(){
 
 /* ---- SUBMIT ---- */
 function confirmExitExam(){
+  if(examPaused) resumeExam();
   if(confirm('Exit test? Your progress will be lost.')) exitExam();
 }
 
 function exitExam(){
   clearInterval(timerInt);
+  document.getElementById('pauseOverlay').classList.remove('active');
+  examPaused = false;
   showMainView();
+}
+
+/* ---- PAUSE / RESUME ---- */
+function pauseExam(){
+  if(examPaused) return;
+  examPaused = true;
+  clearInterval(timerInt);
+  pausedTimeLeft = timeLeft;
+  const m = Math.floor(timeLeft/60);
+  const s = timeLeft%60;
+  document.getElementById('pauseTimerShow').textContent =
+    timeLeft > 0 ? String(m).padStart(2,'0')+':'+String(s).padStart(2,'0') : '∞';
+  document.getElementById('pauseOverlay').classList.add('active');
+}
+function resumeExam(){
+  if(!examPaused) return;
+  examPaused = false;
+  document.getElementById('pauseOverlay').classList.remove('active');
+  if(pausedTimeLeft > 0){ timeLeft = pausedTimeLeft; startTimer(); }
 }
 
 function submitExam(){
@@ -1637,21 +1554,21 @@ function calculateMcqResult(){
   const details = currentQs.map((q,i)=>{
     const userAns = answers[i] || [];
     const correctAns = q.ans || [];
-    if(!userAns.length){ skip++; return {q,userAns,correctAns,status:'skip'}; }
+    if(!userAns.length){ skip++; return {q,userAns,correctAns,status:'skip',note:qNotes[i]||'',flagged:bookmarkedQs.includes(i)}; }
     const isCorrect = userAns.length===correctAns.length && correctAns.every(a=>userAns.includes(a));
-    if(isCorrect){ correct++; return {q,userAns,correctAns,status:'correct'}; }
-    else{ wrong++; return {q,userAns,correctAns,status:'wrong'}; }
+    if(isCorrect){ correct++; return {q,userAns,correctAns,status:'correct',note:qNotes[i]||'',flagged:bookmarkedQs.includes(i)}; }
+    else{ wrong++; return {q,userAns,correctAns,status:'wrong',note:qNotes[i]||'',flagged:bookmarkedQs.includes(i)}; }
   });
 
   const total = currentQs.length;
   const pct   = total ? Math.round(correct/total*100) : 0;
   const mc = currentPaper.marksCorrect || 1;
-  const mw = (currentPaper.marksWrong !== undefined && currentPaper.marksWrong !== null) ? currentPaper.marksWrong : -0.25;
+  const mw = currentPaper.marksWrong   || 0;
   // Per-question marks: use q.marks/q.negMarks if set, else paper default
   let marks = 0, maxMarks = 0;
   details.forEach(d => {
     const qMc = d.q.marks    !== undefined ? d.q.marks    : mc;
-    const qMw = d.q.negMarks !== undefined ? -Math.abs(d.q.negMarks) : mw;
+    const qMw = d.q.negMarks !== undefined ? d.q.negMarks : mw;
     maxMarks += qMc;
     if(d.status === 'correct') marks += qMc;
     else if(d.status === 'wrong') marks += qMw;
@@ -1687,14 +1604,14 @@ function calculatePdfResult(){
   const total = currentQs.length;
   const pct   = total ? Math.round(correct/total*100) : 0;
   const mc = currentPaper.marksCorrect || 1;
-  const mw = (currentPaper.marksWrong !== undefined && currentPaper.marksWrong !== null) ? currentPaper.marksWrong : -0.25;
+  const mw = currentPaper.marksWrong   || 0;
   let marks = 0, maxMarks = 0;
   details.forEach(d => {
     const qMc = d.q.marks    !== undefined ? d.q.marks    : mc;
-    const qMw = d.q.negMarks !== undefined ? -Math.abs(d.q.negMarks) : mw;
+    const qMw = d.q.negMarks !== undefined ? d.q.negMarks : mw;
     maxMarks += qMc;
     if(d.status === 'correct') marks += qMc;
-    else if(d.status === 'wrong') marks -= Math.abs(qMw);
+    else if(d.status === 'wrong') marks += qMw;
   });
   const record = {
     id: Date.now(),
@@ -1730,18 +1647,42 @@ function showResultUI(record){
   document.getElementById('rsS').textContent = record.skip||0;
   document.getElementById('rsT').textContent = record.total||0;
 
-  // Marks row — always show
+  // Marks row
   const marksRow = document.getElementById('rsMarksRow');
-  marksRow.style.display = 'block';
-  const marksColor = record.marks >= 0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
-  document.getElementById('rsMarks').style.color = marksColor;
-  const mwDisplay = record.marksWrong !== undefined ? record.marksWrong : -0.25;
-  document.getElementById('rsMarksBreak').textContent =
-    `+${record.marksCorrect||1} per correct, ${mwDisplay > 0 ? '-' : ''}${Math.abs(mwDisplay)} per wrong`;
+  if(record.marks !== undefined && (record.marksCorrect !== 1 || record.marksWrong !== 0)){
+    marksRow.style.display = 'block';
+    const marksColor = record.marks >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
+    document.getElementById('rsMarks').style.color = marksColor;
+    document.getElementById('rsMarksBreak').textContent =
+      `+${record.marksCorrect} per correct, ${record.marksWrong} per wrong`;
+  } else if(record.marks !== undefined){
+    marksRow.style.display = 'block';
+    document.getElementById('rsMarks').textContent = record.marks.toFixed(2) + ' / ' + record.maxMarks.toFixed(2);
+    document.getElementById('rsMarks').style.color = 'var(--acc)';
+    document.getElementById('rsMarksBreak').textContent = `+${record.marksCorrect||1} per correct`;
+  } else {
+    marksRow.style.display = 'none';
+  }
 
   document.getElementById('reviewArea').style.display = 'none';
   retakeData = record;
+
+  // Extra revision buttons
+  const extraBtns = document.getElementById('extraResultBtns');
+  if(extraBtns){
+    let btns = '';
+    const wrongCount = (record.details||[]).filter(d=>d.status==='wrong').length;
+    const flaggedCount = (record.details||[]).filter(d=>d.flagged).length;
+    if(wrongCount > 0){
+      btns += `<button class="btn" onclick="startQuickRevision(${record.id})" style="background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:var(--red);margin-bottom:8px;">⚡ Quick Revision (${wrongCount} wrong)</button>`;
+    }
+    if(flaggedCount > 0){
+      btns += `<button class="btn" onclick="startBookmarkRevision(${record.id})" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--gold);margin-bottom:8px;">🔖 Review Flagged (${flaggedCount})</button>`;
+    }
+    extraBtns.innerHTML = btns;
+  }
+
   updateHomeStats();
 }
 
@@ -1774,7 +1715,7 @@ function renderReviewItems(){
     const icon = d.status==='correct'?'✅':d.status==='wrong'?'❌':'⬜';
     const q = d.q;
     return `<div class="review-item ${cls}">
-      <div class="rv-st" style="color:${d.status==='correct'?'var(--green)':d.status==='wrong'?'var(--red)':'var(--gold)'};">${icon} Q${i+1} — ${d.status.toUpperCase()}</div>
+      <div class="rv-st" style="color:${d.status==='correct'?'var(--green)':d.status==='wrong'?'var(--red)':'var(--gold)'};">${icon} Q${i+1} — ${d.status.toUpperCase()}${d.flagged?' 🔖':''}</div>
       ${q.q ? `<div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;line-height:1.5;">${q.q}</div>` : ''}
       ${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:10px;" onclick="openIv(this.src)">` : ''}
       ${d.status!=='skip'?`
@@ -1782,7 +1723,7 @@ function renderReviewItems(){
           <span style="color:var(--muted);">Your answer: </span>
           <span style="font-weight:700;color:${d.status==='correct'?'var(--green)':'var(--red)'};">${d.userAns.join(', ')||'—'}</span>
         </div>
-      `:''} 
+      `:''}
       ${d.status==='wrong'?`
         <div style="font-size:0.78rem;margin-bottom:6px;">
           <span style="color:var(--muted);">Correct: </span>
@@ -1791,12 +1732,186 @@ function renderReviewItems(){
       `:''}
       ${q.marks !== undefined ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">Marks: <b style="color:${d.status==='correct'?'var(--green)':d.status==='wrong'?'var(--red)':'var(--muted)'};">${d.status==='correct'?'+'+q.marks : d.status==='wrong'?(q.negMarks||0) : 0}</b></div>` : ''}
       ${q.exp?`<div style="font-size:0.75rem;color:var(--text2);background:var(--s2);border-radius:8px;padding:9px 11px;margin-top:6px;line-height:1.6;">💡 ${q.exp}</div>`:''}
+      ${d.note?`<div style="font-size:0.75rem;color:var(--cyan);background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);padding:8px 10px;border-radius:8px;margin-top:6px;">📝 ${d.note}</div>`:''}
     </div>`;
   }).join('');
 }
 
 function retakeTest(){
   if(retakeData){ openPaper(retakeData.paperId); showMainView(); }
+}
+
+/* ---- BOOKMARK / FLAG ---- */
+function toggleBookmark(qIdx){
+  const i = bookmarkedQs.indexOf(qIdx);
+  if(i>=0) bookmarkedQs.splice(i,1); else bookmarkedQs.push(qIdx);
+  const btn = document.getElementById('bm-'+qIdx);
+  if(btn) btn.textContent = bookmarkedQs.includes(qIdx) ? '🔖' : '🏷️';
+  renderQdots();
+  toast(bookmarkedQs.includes(qIdx) ? '🔖 Flagged!' : 'Flag removed', 'success');
+}
+
+/* ---- NOTES ---- */
+function toggleNoteArea(qIdx){
+  const area = document.getElementById('noteArea-'+qIdx);
+  const btn  = area.previousElementSibling;
+  if(area.style.display==='none'){
+    area.style.display='block';
+    document.getElementById('noteInp-'+qIdx).focus();
+  } else {
+    saveNote(qIdx);
+    area.style.display='none';
+  }
+  btn.textContent = '📝 '+(qNotes[qIdx]?'Edit Note':'Add Note');
+}
+function saveNote(qIdx){
+  const val = document.getElementById('noteInp-'+qIdx)?.value||'';
+  if(val.trim()) qNotes[qIdx] = val.trim();
+  else delete qNotes[qIdx];
+  const btn = document.getElementById('noteArea-'+qIdx)?.previousElementSibling;
+  if(btn) btn.textContent = '📝 '+(qNotes[qIdx]?'Edit Note':'Add Note');
+}
+
+/* ---- QUICK REVISION (wrong questions) ---- */
+function startQuickRevision(recordId){
+  const r = testHistory.find(h=>h.id===recordId);
+  if(!r||!r.details) return;
+  const wrongQs = r.details.filter(d=>d.status==='wrong').map(d=>d.q);
+  if(!wrongQs.length){ toast('No wrong questions!','error'); return; }
+  currentPaper = { id: r.paperId, name: r.paperName+' — Quick Revision', type:'mcq', marksCorrect:1, marksWrong:0 };
+  isPdfTest = false;
+  answers = {};
+  bookmarkedQs = [];
+  qNotes = {};
+  examPaused = false;
+  currentQs = wrongQs;
+  qTimeTaken = wrongQs.map(()=>0);
+  qStartTime = Date.now();
+  document.getElementById('examTitle').textContent = currentPaper.name;
+  document.getElementById('examMcqScroll').style.display='block';
+  document.getElementById('examPdfMode').style.display='none';
+  renderMcqQuestions();
+  renderQdots();
+  updateExamProg();
+  document.getElementById('timerDisplay').textContent='∞';
+  showExamView();
+  toast(`⚡ ${wrongQs.length} galat questions load hue!`, 'success');
+}
+
+/* ---- BOOKMARK REVISION (flagged questions) ---- */
+function startBookmarkRevision(recordId){
+  const r = testHistory.find(h=>h.id===recordId);
+  if(!r||!r.details) return;
+  const flaggedQs = r.details.filter(d=>d.flagged).map(d=>d.q);
+  if(!flaggedQs.length){ toast('No flagged questions!','error'); return; }
+  currentPaper = { id: r.paperId, name: r.paperName+' — Flagged Review', type:'mcq', marksCorrect:1, marksWrong:0 };
+  isPdfTest = false;
+  answers = {};
+  bookmarkedQs = [];
+  qNotes = {};
+  examPaused = false;
+  currentQs = flaggedQs;
+  qTimeTaken = flaggedQs.map(()=>0);
+  qStartTime = Date.now();
+  document.getElementById('examTitle').textContent = currentPaper.name;
+  document.getElementById('examMcqScroll').style.display='block';
+  document.getElementById('examPdfMode').style.display='none';
+  renderMcqQuestions();
+  renderQdots();
+  updateExamProg();
+  document.getElementById('timerDisplay').textContent='∞';
+  showExamView();
+  toast(`🔖 ${flaggedQs.length} flagged questions load hue!`, 'success');
+}
+
+/* ---- ANALYTICS ---- */
+function renderAnalytics(){
+  const el   = document.getElementById('analyticsContent');
+  const hist = testHistory;
+  if(!hist.length){
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📈</div><h3>No data yet</h3><p>Complete some tests to see analytics</p></div>`;
+    return;
+  }
+  const totalTests   = hist.length;
+  const avgScore     = Math.round(hist.reduce((s,r)=>s+(r.pct||0),0)/totalTests);
+  const totalQs      = hist.reduce((s,r)=>s+(r.total||0),0);
+  const totalCorrect = hist.reduce((s,r)=>s+(r.correct||0),0);
+  const overallAcc   = totalQs ? Math.round(totalCorrect/totalQs*100) : 0;
+
+  // Per-paper stats
+  const paperMap = {};
+  hist.forEach(r=>{
+    if(!paperMap[r.paperName]) paperMap[r.paperName] = {attempts:0,totalPct:0,correct:0,total:0};
+    paperMap[r.paperName].attempts++;
+    paperMap[r.paperName].totalPct += r.pct||0;
+    paperMap[r.paperName].correct  += r.correct||0;
+    paperMap[r.paperName].total    += r.total||0;
+  });
+
+  // Subject-wise
+  const subjectMap = {};
+  hist.forEach(r=>{
+    if(!r.details) return;
+    r.details.forEach(d=>{
+      const sub = d.q.subject || 'General';
+      if(!subjectMap[sub]) subjectMap[sub] = {correct:0,total:0};
+      subjectMap[sub].total++;
+      if(d.status==='correct') subjectMap[sub].correct++;
+    });
+  });
+
+  const recent = hist.slice(-7).reverse();
+  const paperEntries = Object.entries(paperMap).sort((a,b)=>b[1].attempts-a[1].attempts).slice(0,8);
+  const subjectEntries = Object.entries(subjectMap)
+    .map(([s,d])=>({subject:s, acc:d.total?Math.round(d.correct/d.total*100):0, total:d.total}))
+    .filter(s=>s.total>=2).sort((a,b)=>a.acc-b.acc).slice(0,6);
+
+  el.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val">${totalTests}</div><div class="stat-lbl">Tests</div></div>
+      <div class="stat-box"><div class="stat-val">${avgScore}%</div><div class="stat-lbl">Avg Score</div></div>
+      <div class="stat-box"><div class="stat-val">${overallAcc}%</div><div class="stat-lbl">Accuracy</div></div>
+    </div>
+    ${subjectEntries.length ? `
+    <div class="sec-label">📉 Subject-wise Accuracy</div>
+    <div class="card">
+      ${subjectEntries.map(s=>`
+        <div class="analytics-bar-wrap">
+          <div class="analytics-bar-label">
+            <span>${s.subject}</span>
+            <span style="color:${s.acc>=60?'var(--green)':s.acc>=40?'var(--gold)':'var(--red)'};">${s.acc}%</span>
+          </div>
+          <div class="analytics-bar-track">
+            <div class="analytics-bar-fill" style="width:${s.acc}%;background:${s.acc>=60?'linear-gradient(90deg,var(--green),#34d399)':s.acc>=40?'linear-gradient(90deg,var(--gold),#fbbf24)':'linear-gradient(90deg,var(--red),#fb7185)'}"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+    <div class="sec-label">📋 Paper-wise Performance</div>
+    <div class="card">
+      ${paperEntries.map(([name,d])=>{
+        const avg = Math.round(d.totalPct/d.attempts);
+        const clr = avg>=60?'var(--green)':avg>=40?'var(--gold)':'var(--red)';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">${d.attempts}x</div>
+          <div style="font-size:0.88rem;font-weight:800;color:${clr};">${avg}%</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="sec-label">📅 Recent Tests (last ${recent.length})</div>
+    <div class="card">
+      ${recent.map(r=>{
+        const clr = r.pct>=60?'var(--green)':r.pct>=35?'var(--gold)':'var(--red)';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:0.82rem;font-weight:800;color:${clr};min-width:42px;">${r.pct}%</div>
+          <div style="flex:1;font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.paperName}</div>
+          <div style="font-size:0.65rem;color:var(--muted);">${new Date(r.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="height:20px;"></div>
+  `;
 }
 
 function backToHome(){
@@ -1941,68 +2056,20 @@ let srsTestQuestions = [];
 let srsTestIdx       = 0;
 let srsTestAnswers   = [];
 let srsTestStartTime = 0;
-let srsTestTimeMins  = 0;
-let srsTestMarksC    = 1;
-let srsTestMarksW    = 0;
-let srsTestTimeLeft  = 0;
-let srsTestTimerInt  = null;
 
-function openSrsTestPopup(){
-  const due = srsDueToday();
-  const stats = document.getElementById('srsTestPopupStats');
-  if(stats){
-    stats.innerHTML = `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#6ee7b7;font-weight:700;">📋 ${due.length} due cards available</div>`;
-  }
-  const countInput = document.getElementById('srsTestCountInput');
-  if(countInput){ countInput.placeholder = `0 = sabhi ${due.length} cards`; countInput.max = due.length; }
-  openPopup('srsTestPopup');
-}
-
-function startSrsTestFromPopup(){
-  closePopup('srsTestPopup');
-  const timeMins  = parseFloat(document.getElementById('srsTestTimeInput').value)  || 0;
-  const marksC    = parseFloat(document.getElementById('srsTestMarksCorrect').value);
-  const marksW    = parseFloat(document.getElementById('srsTestMarksWrong').value);
-  const qCount    = parseInt(document.getElementById('srsTestCountInput').value)   || 0;
-  startSrsTest(timeMins, marksC, marksW, qCount);
-}
-
-function startSrsTest(timeMins=0, marksCorrect=1, marksWrong=0, qCount=0){
+function startSrsTest(){
   const due = srsDueToday();
   if(!due.length){ toast('Koi due cards nahi!','success'); return; }
-  let selected = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
-  if(qCount > 0) selected = selected.slice(0, qCount);
-  srsTestQuestions   = selected;
-  srsTestIdx         = 0;
-  srsTestAnswers     = [];
-  srsTestStartTime   = Date.now();
-  srsTestTimeMins    = timeMins;
-  srsTestMarksC      = isNaN(marksCorrect) ? 1 : marksCorrect;
-  srsTestMarksW      = isNaN(marksWrong)   ? 0 : marksWrong;
-  srsTestTimeLeft    = timeMins > 0 ? timeMins * 60 : 0;
-  clearInterval(srsTestTimerInt);
-  if(timeMins > 0){
-    srsTestTimerInt = setInterval(()=>{
-      srsTestTimeLeft--;
-      updateSrsTestTimer();
-      if(srsTestTimeLeft <= 0){ clearInterval(srsTestTimerInt); showSrsTestResult(); }
-    }, 1000);
-  }
+  srsTestQuestions = shuffleArr(due.map(card=>({...card, q:{...card.q, opts: card.q&&card.q.opts ? shuffleOpts(card.q.opts, card.q.ans) : card.q&&card.q.opts}})));
+  srsTestIdx       = 0;
+  srsTestAnswers   = [];
+  srsTestStartTime = Date.now();
   showSrsTestView();
 }
 
 function shuffleOpts(opts, ans){
   // keep opts order as-is (answer keys already mapped)
   return opts;
-}
-
-function updateSrsTestTimer(){
-  const el = document.getElementById('srsTestTimerDisplay');
-  if(!el) return;
-  const m = Math.floor(srsTestTimeLeft/60);
-  const s = srsTestTimeLeft % 60;
-  el.textContent = `⏱️ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  el.style.color = srsTestTimeLeft <= 30 ? '#f43f5e' : srsTestTimeLeft <= 60 ? '#f59e0b' : '#6ee7b7';
 }
 
 function showSrsTestView(){
@@ -2013,20 +2080,13 @@ function showSrsTestView(){
 }
 
 function exitSrsTest(){
-  clearInterval(srsTestTimerInt);
   document.getElementById('srsTestView').style.display = 'none';
-  const nextFixed = document.getElementById('srsNextFixed');
-  if(nextFixed) nextFixed.style.display='none';
   showMainView();
   renderHome();
   renderSrsPage();
 }
 
 function renderSrsTestQ(){
-  // Hide next button for new question
-  const nextFixed = document.getElementById('srsNextFixed');
-  if(nextFixed) nextFixed.style.display='none';
-
   const total = srsTestQuestions.length;
   const idx   = srsTestIdx;
   const pct   = total ? Math.round(idx/total*100) : 0;
@@ -2049,79 +2109,59 @@ function renderSrsTestQ(){
         ${card.srsReason==='slow'?'<span style="margin-left:8px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--gold);padding:2px 8px;border-radius:20px;font-size:0.65rem;">⏱️ SLOW</span>':''}
         ${card.srsReason==='wrong'?'<span style="margin-left:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:2px 8px;border-radius:20px;font-size:0.65rem;">❌ WRONG</span>':''}
       </div>
-      <div class="srs-q-text">${q.img ? `<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:12px;background:#fff;" onclick="openIv(this.src)">` : (q.q||'No question text')}</div>
-      <div id="srsTestOpts" class="${isImageOnlyOpts(q.opts)?'opts-grid':'eq-opts'}" style="margin-bottom:16px;">
-        ${renderOptsHtml(q.opts, [], -1, 'srs')}
+      <div class="srs-q-text">${q.img?`<img src="${q.img}" style="width:100%;border-radius:8px;margin-bottom:8px;" onclick="openIv(this.src)">`:(q.q||'No question text')}</div>
+      ${(q.opts||[]).length ? `<div id="srsTestOpts" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        ${(q.opts||[]).map((o,j)=>{
+          const letter = String.fromCharCode(65+j);
+          return `<div id="sto_${letter}" onclick="selectSrsTestOpt('${letter}')" style="padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;font-size:0.87rem;cursor:pointer;transition:all .2s;">${letter}. ${o}</div>`;
+        }).join('')}
+      </div>` : '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:16px;">Image-based question — answer shown after submit</div>'}
+      <div style="display:flex;gap:10px;">
+        <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
+        <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected||null)" disabled style="flex:2;padding:12px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
       </div>
-      <div id="srsBtnRow" style="display:flex;gap:10px;margin-bottom:16px;">
-        <button id="srsTestSkipBtn" onclick="submitSrsTestQ(null)" style="flex:1;padding:14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;">⏭️ Skip</button>
-        <button id="srsTestSubmitBtn" onclick="submitSrsTestQ(window._srsTestSelected)" disabled style="flex:2;padding:14px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.85rem;font-weight:800;color:#a5b4fc;cursor:pointer;opacity:0.5;">Submit →</button>
-      </div>
-      <button id="srsNextInline" style="display:none;width:100%;padding:15px;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:11px;font-size:0.95rem;font-weight:800;color:white;cursor:pointer;margin-bottom:20px;">Next →</button>
     </div>`;
-  window._srsTestSelected = [];
+  window._srsTestSelected = null;
 }
 
 function selectSrsTestOpt(letter){
-  const card = srsTestQuestions[srsTestIdx];
-  const q = card && card.q;
-  const isMulti = q && q.ans && q.ans.length > 1;
-
-  if(!window._srsTestSelected) window._srsTestSelected = [];
-
-  if(isMulti){
-    // Toggle selection
-    const idx = window._srsTestSelected.indexOf(letter);
-    if(idx >= 0) window._srsTestSelected.splice(idx, 1);
-    else window._srsTestSelected.push(letter);
-  } else {
-    window._srsTestSelected = [letter];
-  }
-
-  // Re-render all option styles
+  window._srsTestSelected = letter;
   document.querySelectorAll('[id^="sto_"]').forEach(el=>{
-    const l = el.id.replace('sto_','');
-    const sel = window._srsTestSelected.includes(l);
-    el.style.background = sel ? 'rgba(99,102,241,.18)' : 'var(--s2)';
-    el.style.border = sel ? '2px solid rgba(99,102,241,.6)' : '1.5px solid var(--border)';
-    el.style.color = sel ? '#a5b4fc' : '';
-    el.style.fontWeight = sel ? '800' : '';
+    el.style.background = 'var(--s2)';
+    el.style.border = '1.5px solid var(--border)';
+    el.style.color = '';
+    el.style.fontWeight = '';
   });
-
-  const submitBtn = document.getElementById('srsTestSubmitBtn');
-  if(submitBtn){
-    submitBtn.disabled = window._srsTestSelected.length === 0;
-    submitBtn.style.opacity = window._srsTestSelected.length > 0 ? '1' : '0.5';
-    if(isMulti) submitBtn.textContent = `Submit (${window._srsTestSelected.join(',')}) →`;
-    else submitBtn.textContent = 'Submit →';
+  const el = document.getElementById('sto_'+letter);
+  if(el){
+    el.style.background = 'rgba(99,102,241,.18)';
+    el.style.border = '1.5px solid rgba(99,102,241,.6)';
+    el.style.color = '#a5b4fc';
+    el.style.fontWeight = '800';
   }
+  const submitBtn = document.getElementById('srsTestSubmitBtn');
+  if(submitBtn){ submitBtn.disabled=false; submitBtn.style.opacity='1'; }
 }
 
 function submitSrsTestQ(selected){
   const card = srsTestQuestions[srsTestIdx];
   const q    = card.q;
   const correctLetters = (q&&q.ans) ? q.ans.map(a=>a.trim().toUpperCase()) : [];
+  const isCorrect = selected && correctLetters.includes(selected.toUpperCase());
+  const isSkip    = selected === null;
 
-  // Handle array or null
-  const selectedArr = selected === null ? [] : (Array.isArray(selected) ? selected : [selected]);
-  const isSkip = selected === null;
-  const isCorrect = !isSkip &&
-    selectedArr.length === correctLetters.length &&
-    correctLetters.every(a => selectedArr.includes(a));
+  srsTestAnswers.push({ card, selected, isCorrect, isSkip, correctLetters });
 
-  srsTestAnswers.push({ card, selected: selectedArr, isCorrect, isSkip, correctLetters });
-
-  // Show result on options
+  // Show result briefly then next
   document.querySelectorAll('[id^="sto_"]').forEach(el=>{
     const letter = el.id.replace('sto_','');
-    const optText = q&&q.opts && q.opts[letter.charCodeAt(0)-65] !== letter ? q.opts[letter.charCodeAt(0)-65] : '';
-    const label = optText ? letter+'. '+optText : letter;
+    const optText = q&&q.opts ? q.opts[letter.charCodeAt(0)-65] : '';
     if(correctLetters.includes(letter)){
       el.style.background='rgba(16,185,129,.18)'; el.style.border='2px solid rgba(16,185,129,.6)'; el.style.color='#6ee7b7'; el.style.fontWeight='800';
-      el.textContent = '✅ '+label;
-    } else if(selectedArr.includes(letter) && !correctLetters.includes(letter)){
+      el.textContent = '✅ '+letter+'. '+optText;
+    } else if(letter===selected && !isCorrect){
       el.style.background='rgba(244,63,94,.12)'; el.style.border='2px solid rgba(244,63,94,.5)'; el.style.color='#fb7185';
-      el.textContent = '❌ '+label;
+      el.textContent = '❌ '+letter+'. '+optText;
     } else { el.style.opacity='0.4'; }
     el.style.cursor='default';
     el.onclick=null;
@@ -2129,19 +2169,16 @@ function submitSrsTestQ(selected){
 
   const skipBtn   = document.getElementById('srsTestSkipBtn');
   const submitBtn = document.getElementById('srsTestSubmitBtn');
-  const srsBtnRow = document.getElementById('srsBtnRow');
   if(skipBtn)   { skipBtn.disabled=true; skipBtn.style.opacity='0.4'; }
-  if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; submitBtn.textContent='Submit →'; }
-  if(srsBtnRow) srsBtnRow.style.display='none';
+  if(submitBtn) { submitBtn.disabled=true; submitBtn.style.opacity='0.4'; }
 
-  // Show Next button at bottom of view
-  const nextFixed = document.getElementById('srsNextFixed');
-  const nextFixedBtn = document.getElementById('srsNextFixedBtn');
-  if(nextFixed && nextFixedBtn){
-    nextFixedBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
-    nextFixedBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
-    nextFixed.style.display='block';
-  }
+  // Show next button
+  const card2 = srsTestQuestions[srsTestIdx]; // for closure
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = srsTestIdx+1 >= srsTestQuestions.length ? '🏁 Finish' : 'Next →';
+  nextBtn.style.cssText='margin-top:10px;width:100%;padding:13px;background:rgba(99,102,241,.2);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;font-size:0.9rem;font-weight:800;color:#a5b4fc;cursor:pointer;';
+  nextBtn.onclick = ()=>{ srsTestIdx++; renderSrsTestQ(); };
+  document.querySelector('#srsTestBody .srs-card').appendChild(nextBtn);
 }
 
 function showSrsTestResult(){
@@ -2152,13 +2189,6 @@ function showSrsTestResult(){
   const pct     = total ? Math.round(correct/total*100) : 0;
   const timeSec = Math.round((Date.now()-srsTestStartTime)/1000);
   const timeStr = timeSec>60 ? `${Math.floor(timeSec/60)}m ${timeSec%60}s` : `${timeSec}s`;
-  clearInterval(srsTestTimerInt);
-
-  // Marks calculation — always apply negative marking
-  const mw = (srsTestMarksW !== undefined && srsTestMarksW !== 0) ? srsTestMarksW : -0.25;
-  const totalMarks = (correct * srsTestMarksC) + (wrong * mw);
-  const maxMarks   = total * srsTestMarksC;
-  const showMarks  = true;
 
   // Reset wrong/skipped back into SRS as due today
   srsTestAnswers.forEach(a=>{
@@ -2174,9 +2204,7 @@ function showSrsTestResult(){
     <div style="text-align:center;padding:20px 10px;">
       <div style="font-size:3.5rem;margin-bottom:8px;">${emoji}</div>
       <div style="font-size:1.6rem;font-weight:900;margin-bottom:4px;">${pct}%</div>
-      ${showMarks ? `<div style="font-size:0.95rem;font-weight:900;color:var(--acc);margin-bottom:6px;">📊 ${totalMarks % 1 === 0 ? totalMarks : totalMarks.toFixed(2)} / ${maxMarks} Marks</div>` : ''}
       <div style="font-size:0.82rem;color:var(--text2);margin-bottom:20px;">Smart Review Test Complete · ${timeStr}</div>
-      ${showMarks ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;color:var(--text2);">✅ +${srsTestMarksC} correct &nbsp;|&nbsp; ❌ -${Math.abs(srsTestMarksW)} wrong</div>` : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px;">
         <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px;">
           <div style="font-size:1.4rem;font-weight:900;color:#6ee7b7;">${correct}</div>
@@ -2554,8 +2582,9 @@ async function init(){
     if(document.getElementById('srsView').classList.contains('active-view')){
       exitSrsSession(); history.pushState({}, ''); return;
     }
-    // Exam open
+    // Exam open — pause overlay first
     if(document.getElementById('examView').classList.contains('active-view')){
+      if(examPaused){ resumeExam(); history.pushState({}, ''); return; }
       confirmExitExam(); history.pushState({}, ''); return;
     }
     // Result open
