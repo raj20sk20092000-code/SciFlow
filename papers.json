@@ -14,6 +14,19 @@
       "marksWrong": 0,
       "description": "100 प्रश्नों वाला मिश्रित विषय प्रश्न पत्र - गणित, विज्ञान एवं सामान्य ज्ञान",
       "file": "papera.json"
-    }
+    },
+    {
+  "id": "UPBED2025S2",
+  "name": "UPBED2025 MATH PAPER 2",
+  "type": "mcq",
+  "subject": "UP BEd",
+  "difficulty": "Medium",
+  "questions": 12,
+  "time": 120,
+  "marksCorrect": 1,
+  "marksWrong": 0,
+  "description": "UP BEd 2025 Set 2 \u2014 12 Questions with Answer Key",
+  "file": "UPBED2025S2.json"
+}
   ]
 }
